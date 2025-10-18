@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: '/telegram-referral-bot/',
+  base: '/reffer/',
   server: {
     host: "::",
     port: 8080,
