@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { usePartner } from "@/hooks/useGoogleSheets";
+import { useTelegramWebApp } from "@/hooks/useTelegramWebApp";
 import RegistrationView from "@/components/views/RegistrationView";
 import PersonalDataView from "@/components/views/PersonalDataView";
 import DashboardView from "@/components/views/DashboardView";
@@ -8,63 +9,22 @@ import StatsView from "@/components/views/StatsView";
 import NetworkView from "@/components/views/NetworkView";
 import { usePartnerCommissions, usePartnerNetwork } from "@/hooks/useGoogleSheets";
 import { googleSheetsService } from "@/services/googleSheetsService";
-
-interface TelegramUser {
-  id: string;
-  first_name: string;
-  username?: string;
-}
+import { TelegramUser } from "@/types/telegram";
 
 const Index = () => {
-  const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
+  const { currentUser, isReady } = useTelegramWebApp();
   const [currentView, setCurrentView] = useState<"registration" | "personalData" | "dashboard" | "stats" | "network">("registration");
   const [inviterCode, setInviterCode] = useState("");
   const [loggedOut, setLoggedOut] = useState(false);
   const [forceRefresh, setForceRefresh] = useState(0);
   const [isExistingUserLogin, setIsExistingUserLogin] = useState(false);
 
-  useEffect(() => {
-    // Получаем реальные данные из Telegram Web App
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
-      const telegramData = window.Telegram.WebApp.initDataUnsafe;
-      console.log('Real Telegram Web App data:', telegramData);
-      
-      if (telegramData.user) {
-        const user = telegramData.user;
-        console.log('Real Telegram user data received:', user);
-        setTelegramUser({
-          id: user.id.toString(),
-          first_name: user.first_name,
-          username: user.username || undefined
-        });
-        return;
-      }
-    }
-
-    // Fallback - проверяем URL параметры
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    const first_name = params.get('first_name');
-    const username = params.get('username');
-
-    if (id && first_name) {
-      console.log('Telegram data from URL params:', { id, first_name, username });
-      setTelegramUser({
-        id,
-        first_name,
-        username: username || undefined
-      });
-    } else {
-      // Временный fallback для разработки - генерируем уникальный ID
-      const uniqueTestId = `test_user_${Math.random().toString(36).substr(2, 9)}`;
-      console.log('No real Telegram data, generating unique test user:', uniqueTestId);
-      setTelegramUser({
-        id: uniqueTestId,
-        first_name: 'Test User',
-        username: 'testuser'
-      });
-    }
-  }, []);
+  // Преобразуем currentUser в telegramUser для совместимости
+  const telegramUser: TelegramUser | null = currentUser ? {
+    id: currentUser.id.toString(),
+    first_name: currentUser.first_name,
+    username: currentUser.username
+  } : null;
 
   const { 
     partner, 
