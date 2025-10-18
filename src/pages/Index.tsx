@@ -6,37 +6,65 @@ import PersonalDataView from "@/components/views/PersonalDataView";
 import DashboardView from "@/components/views/DashboardView";
 import StatsView from "@/components/views/StatsView";
 import NetworkView from "@/components/views/NetworkView";
-import TelegramAuthView from "@/components/views/TelegramAuthView";
-import TelegramContactAuthView from "@/components/views/TelegramContactAuthView";
-import TelegramWebAuthView from "@/components/views/TelegramWebAuthView";
-import TelegramDebugView from "@/components/views/TelegramDebugView";
-import TestModeView from "@/components/views/TestModeView";
 import { usePartnerCommissions, usePartnerNetwork } from "@/hooks/useGoogleSheets";
 import { googleSheetsService } from "@/services/googleSheetsService";
-import { useTelegramWebApp } from "@/hooks/useTelegramWebApp";
-import { TelegramUser } from "@/types/telegram";
+
+interface TelegramUser {
+  id: string;
+  first_name: string;
+  username?: string;
+}
 
 const Index = () => {
-  const [currentView, setCurrentView] = useState<"registration" | "personalData" | "dashboard" | "stats" | "network" | "telegramAuth" | "telegramContactAuth" | "telegramWebAuth" | "debug" | "testMode">("registration");
+  const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
+  const [currentView, setCurrentView] = useState<"registration" | "personalData" | "dashboard" | "stats" | "network">("registration");
   const [inviterCode, setInviterCode] = useState("");
   const [loggedOut, setLoggedOut] = useState(false);
   const [forceRefresh, setForceRefresh] = useState(0);
   const [isExistingUserLogin, setIsExistingUserLogin] = useState(false);
-  const [isTelegramAuth, setIsTelegramAuth] = useState(false);
-  const [testUser, setTestUser] = useState<TelegramUser | null>(null);
-  
-  // Используем хук Telegram Web App
-  const { user: telegramUser, isReady } = useTelegramWebApp();
-  
-  // Используем тестового пользователя если нет данных из Telegram
-  const currentTelegramUser = telegramUser || testUser;
 
-  // Логика получения пользователя теперь обрабатывается в хуке useTelegramWebApp
   useEffect(() => {
-    if (isReady && telegramUser) {
-      console.log('Telegram user ready:', telegramUser);
+    // Получаем реальные данные из Telegram Web App
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+      const telegramData = window.Telegram.WebApp.initDataUnsafe;
+      console.log('Real Telegram Web App data:', telegramData);
+      
+      if (telegramData.user) {
+        const user = telegramData.user;
+        console.log('Real Telegram user data received:', user);
+        setTelegramUser({
+          id: user.id.toString(),
+          first_name: user.first_name,
+          username: user.username || undefined
+        });
+        return;
+      }
     }
-  }, [isReady, telegramUser]);
+
+    // Fallback - проверяем URL параметры
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const first_name = params.get('first_name');
+    const username = params.get('username');
+
+    if (id && first_name) {
+      console.log('Telegram data from URL params:', { id, first_name, username });
+      setTelegramUser({
+        id,
+        first_name,
+        username: username || undefined
+      });
+    } else {
+      // Временный fallback для разработки - генерируем уникальный ID
+      const uniqueTestId = `test_user_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('No real Telegram data, generating unique test user:', uniqueTestId);
+      setTelegramUser({
+        id: uniqueTestId,
+        first_name: 'Test User',
+        username: 'testuser'
+      });
+    }
+  }, []);
 
   const { 
     partner, 
@@ -44,20 +72,20 @@ const Index = () => {
     error: partnerError, 
     registerPartner,
     refreshPartner
-  } = usePartner(loggedOut ? '' : (currentTelegramUser?.id?.toString() || ''), forceRefresh);
+  } = usePartner(loggedOut ? '' : (telegramUser?.id || ''), forceRefresh);
 
   const { 
     commissions, 
     loading: commissionsLoading, 
     error: commissionsError,
     refresh: refreshCommissions
-  } = usePartnerCommissions(loggedOut ? '' : (currentTelegramUser?.id?.toString() || ''));
+  } = usePartnerCommissions(loggedOut ? '' : (telegramUser?.id || ''));
 
   const {
     network,
     loading: networkLoading,
     error: networkError
-  } = usePartnerNetwork(loggedOut ? '' : (currentTelegramUser?.id?.toString() || ''));
+  } = usePartnerNetwork(loggedOut ? '' : (telegramUser?.id || ''));
 
   const handlePromoCodeSuccess = (validInviterCode: string) => {
     console.log('Promo code validated successfully, proceeding to NEW USER registration:', validInviterCode);
@@ -69,65 +97,11 @@ const Index = () => {
   };
 
   const handleExistingUserLogin = () => {
-    console.log('Existing user login initiated for Telegram ID:', currentTelegramUser?.id?.toString());
+    console.log('Existing user login initiated for Telegram ID:', telegramUser?.id);
     setLoggedOut(false);
     setIsExistingUserLogin(true);
     // Принудительно обновляем данные для проверки существующего пользователя
     setForceRefresh(prev => prev + 1);
-  };
-
-  const handleTelegramAuth = () => {
-    console.log('Telegram auth initiated');
-    setIsTelegramAuth(true);
-    setCurrentView("telegramAuth");
-  };
-
-  const handleTelegramContactAuth = () => {
-    console.log('Telegram contact auth initiated');
-    setIsTelegramAuth(true);
-    setCurrentView("telegramContactAuth");
-  };
-
-  const handleTelegramWebAuth = () => {
-    console.log('Telegram web auth initiated');
-    setIsTelegramAuth(true);
-    setCurrentView("telegramWebAuth");
-  };
-
-  const handleTelegramAuthSuccess = (user: TelegramUser) => {
-    console.log('Telegram auth successful:', user);
-    setIsTelegramAuth(false);
-    setLoggedOut(false);
-    setIsExistingUserLogin(true);
-    // Принудительно обновляем данные для проверки существующего пользователя
-    setForceRefresh(prev => prev + 1);
-  };
-
-  const handleTelegramAuthCancel = () => {
-    console.log('Telegram auth cancelled');
-    setIsTelegramAuth(false);
-    setCurrentView("registration");
-  };
-
-  const handleDebug = () => {
-    console.log('Opening debug view');
-    setCurrentView("debug");
-  };
-
-  const handleTestMode = () => {
-    console.log('Opening test mode');
-    setCurrentView("testMode");
-  };
-
-  const handleTestUserSet = (user: TelegramUser) => {
-    console.log('Test user set:', user);
-    setTestUser(user);
-    setCurrentView("registration");
-  };
-
-  const handleTestModeCancel = () => {
-    console.log('Test mode cancelled');
-    setCurrentView("registration");
   };
 
   const handleRegistrationSuccess = () => {
@@ -139,15 +113,14 @@ const Index = () => {
     // Обновляем данные
     setForceRefresh(prev => prev + 1);
     refreshCommissions();
-    console.log('Redirecting to dashboard...');
   };
 
-  const handleViewChange = (view: "registration" | "dashboard" | "stats" | "network" | "personalData" | "telegramAuth" | "telegramContactAuth" | "telegramWebAuth" | "debug" | "testMode") => {
+  const handleViewChange = (view: "registration" | "dashboard" | "stats" | "network" | "personalData") => {
     setCurrentView(view);
   };
 
   const handleLogout = () => {
-    console.log('Logging out user:', currentTelegramUser?.id?.toString());
+    console.log('Logging out user:', telegramUser?.id);
     // Очищаем все локальные данные
     googleSheetsService.clearAllLocalData();
     // Устанавливаем флаг выхода
@@ -155,7 +128,6 @@ const Index = () => {
     // Сбрасываем все состояние
     setInviterCode("");
     setIsExistingUserLogin(false);
-    setTestUser(null); // Очищаем тестового пользователя
     setCurrentView("registration");
     // Принудительно обновляем хуки для сброса данных партнера
     setForceRefresh(prev => prev + 1);
@@ -163,7 +135,7 @@ const Index = () => {
   };
 
   const handlePersonalDataComplete = async (personalData: { firstName: string; lastName: string; phone: string; email: string }) => {
-    if (!currentTelegramUser) {
+    if (!telegramUser) {
       console.error('No telegram user data');
       return;
     }
@@ -171,13 +143,12 @@ const Index = () => {
     console.log('=== STARTING NEW USER REGISTRATION PROCESS ===');
     console.log('Personal data:', personalData);
     console.log('Inviter code:', inviterCode);
-    console.log('Telegram user:', currentTelegramUser);
-    console.log('Username to save:', currentTelegramUser.username);
+    console.log('Telegram user:', telegramUser);
     
     const result = await registerPartner(
       inviterCode,
       personalData,
-      currentTelegramUser.username || undefined
+      telegramUser.username
     );
     
     console.log('Registration result:', result);
@@ -198,25 +169,11 @@ const Index = () => {
       );
     }
 
-    if (currentView === "telegramAuth") {
-      return (
-        <TelegramAuthView
-          onAuthSuccess={handleTelegramAuthSuccess}
-          onCancel={handleTelegramAuthCancel}
-        />
-      );
-    }
-
     return (
       <RegistrationView
-        telegramUser={currentTelegramUser}
+        telegramUser={telegramUser}
         onPromoCodeSuccess={handlePromoCodeSuccess}
         onExistingUserLogin={handleExistingUserLogin}
-        onTelegramAuth={handleTelegramAuth}
-        onTelegramContactAuth={handleTelegramContactAuth}
-        onTelegramWebAuth={handleTelegramWebAuth}
-        onDebug={handleDebug}
-        onTestMode={handleTestMode}
         partnerLoading={partnerLoading}
       />
     );
@@ -303,62 +260,12 @@ const Index = () => {
     );
   }
 
-  // Если мы в процессе авторизации через Telegram
-  if (currentView === "telegramAuth") {
-    return (
-      <TelegramAuthView
-        onAuthSuccess={handleTelegramAuthSuccess}
-        onCancel={handleTelegramAuthCancel}
-      />
-    );
-  }
-
-  // Если мы в процессе авторизации через Telegram с запросом контакта
-  if (currentView === "telegramContactAuth") {
-    return (
-      <TelegramContactAuthView
-        onAuthSuccess={handleTelegramAuthSuccess}
-        onCancel={handleTelegramAuthCancel}
-      />
-    );
-  }
-
-  // Если мы в процессе авторизации через Telegram Web
-  if (currentView === "telegramWebAuth") {
-    return (
-      <TelegramWebAuthView
-        onAuthSuccess={handleTelegramAuthSuccess}
-        onCancel={handleTelegramAuthCancel}
-      />
-    );
-  }
-
-  // Отладочный режим
-  if (currentView === "debug") {
-    return <TelegramDebugView />;
-  }
-
-  // Тестовый режим
-  if (currentView === "testMode") {
-    return (
-      <TestModeView
-        onUserSet={handleTestUserSet}
-        onCancel={handleTestModeCancel}
-      />
-    );
-  }
-
   // По умолчанию показываем экран ввода промокода
   return (
     <RegistrationView
-      telegramUser={currentTelegramUser}
+      telegramUser={telegramUser}
       onPromoCodeSuccess={handlePromoCodeSuccess}
       onExistingUserLogin={handleExistingUserLogin}
-      onTelegramAuth={handleTelegramAuth}
-      onTelegramContactAuth={handleTelegramContactAuth}
-      onTelegramWebAuth={handleTelegramWebAuth}
-      onDebug={handleDebug}
-      onTestMode={handleTestMode}
       partnerLoading={partnerLoading}
     />
   );
