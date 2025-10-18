@@ -8,7 +8,14 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && gh-pages -d dist",
+    "bot:install": "npm install express axios nodemon --prefix .",
+    "bot:dev": "nodemon telegram-bot-server.js",
+    "bot:start": "node telegram-bot-server.js",
+    "bot:webhook:set": "curl -X POST \"https://api.telegram.org/bot8195455030:AAG6-zvkYu3r4s0LVBXQgWNwS7qyuNluGJ0/setWebhook\" -H \"Content-Type: application/json\" -d '{\"url\": \"https://your-domain.com/webhook\"}'",
+    "bot:webhook:delete": "curl -X POST \"https://api.telegram.org/bot8195455030:AAG6-zvkYu3r4s0LVBXQgWNwS7qyuNluGJ0/deleteWebhook\"",
+    "bot:info": "curl \"https://api.telegram.org/bot8195455030:AAG6-zvkYu3r4s0LVBXQgWNwS7qyuNluGJ0/getMe\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -72,6 +79,7 @@
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
+    "gh-pages": "^6.3.0",
     "globals": "^15.9.0",
     "lovable-tagger": "^1.1.7",
     "postcss": "^8.4.47",

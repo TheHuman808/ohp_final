@@ -222,13 +222,13 @@ class GoogleSheetsService {
             lastName: row[3] || '',
             phone: row[4] || '',
             email: row[5] || '',
-            username: row[6] || '',
-            promoCode: row[7] || '',
-            inviterCode: row[8] || '',
-            inviterTelegramId: row[9] || '',
-            registrationDate: row[10] || '',
-            totalEarnings: parseFloat(row[11]) || 0,
-            salesCount: parseInt(row[12]) || 0
+            username: row[6] || '', // Username в колонке G
+            promoCode: row[7] || '', // Промокод в колонке H
+            inviterCode: row[8] || '', // Код пригласившего в колонке I
+            inviterTelegramId: row[9] || '', // Telegram ID пригласившего в колонке J
+            registrationDate: row[10] || '', // Дата регистрации в колонке K
+            totalEarnings: parseFloat(row[11]) || 0, // Общий доход в колонке L
+            salesCount: parseInt(row[12]) || 0 // Количество продаж в колонке M
           };
           console.log('Found partner for Telegram ID:', telegramId, partner);
           console.log('=== GET PARTNER END ===');
@@ -271,13 +271,13 @@ class GoogleSheetsService {
             lastName: row[3] || '',
             phone: row[4] || '',
             email: row[5] || '',
-            username: row[6] || '',
-            promoCode: row[7] || '',
-            inviterCode: row[8] || '',
-            inviterTelegramId: row[9] || '',
-            registrationDate: row[10] || '',
-            totalEarnings: parseFloat(row[11]) || 0,
-            salesCount: parseInt(row[12]) || 0
+            username: row[6] || '', // Username в колонке G
+            promoCode: row[7] || '', // Промокод в колонке H
+            inviterCode: row[8] || '', // Код пригласившего в колонке I
+            inviterTelegramId: row[9] || '', // Telegram ID пригласившего в колонке J
+            registrationDate: row[10] || '', // Дата регистрации в колонке K
+            totalEarnings: parseFloat(row[11]) || 0, // Общий доход в колонке L
+            salesCount: parseInt(row[12]) || 0 // Количество продаж в колонке M
           };
         }
       }
@@ -533,13 +533,13 @@ class GoogleSheetsService {
           lastName: row[3] || '',
           phone: row[4] || '',
           email: row[5] || '',
-          username: row[6] || '',
-          promoCode: row[7] || '',
-          inviterCode: row[8] || '',
-          inviterTelegramId: row[9] || '',
-          registrationDate: row[10] || '',
-          totalEarnings: parseFloat(row[11]) || 0,
-          salesCount: parseInt(row[12]) || 0
+          username: row[6] || '', // Username в колонке G
+          promoCode: row[7] || '', // Промокод в колонке H
+          inviterCode: row[8] || '', // Код пригласившего в колонке I
+          inviterTelegramId: row[9] || '', // Telegram ID пригласившего в колонке J
+          registrationDate: row[10] || '', // Дата регистрации в колонке K
+          totalEarnings: parseFloat(row[11]) || 0, // Общий доход в колонке L
+          salesCount: parseInt(row[12]) || 0 // Количество продаж в колонке M
         });
       }
 

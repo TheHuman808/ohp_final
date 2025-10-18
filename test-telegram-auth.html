@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест Telegram Web App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        .container {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .button {
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .button:hover {
+            opacity: 0.8;
+        }
+        .info {
+            background: var(--tg-theme-hint-color, #999999);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔐 Тест Telegram Web App</h2>
+        <p>Этот тест проверяет работу авторизации через Telegram Web App</p>
+        
+        <div id="status" class="info">
+            Инициализация...
+        </div>
+        
+        <div id="userInfo" class="info" style="display: none;">
+            <h3>Данные пользователя:</h3>
+            <div id="userDetails"></div>
+        </div>
+        
+        <button class="button" onclick="requestPermissions()">
+            Запросить разрешения
+        </button>
+        
+        <button class="button" onclick="testAuth()" style="background: #28a745;">
+            Тест авторизации
+        </button>
+        
+        <button class="button" onclick="openMainApp()" style="background: #17a2b8;">
+            Открыть основное приложение
+        </button>
+    </div>
+
+    <script>
+        let tg = window.Telegram?.WebApp;
+        let user = null;
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `info ${type}`;
+        }
+
+        function updateUserInfo() {
+            const userInfo = document.getElementById('userInfo');
+            const userDetails = document.getElementById('userDetails');
+            
+            if (user) {
+                userInfo.style.display = 'block';
+                userDetails.innerHTML = `
+                    <p><strong>ID:</strong> ${user.id}</p>
+                    <p><strong>Имя:</strong> ${user.first_name}</p>
+                    <p><strong>Фамилия:</strong> ${user.last_name || 'Не указана'}</p>
+                    <p><strong>Username:</strong> @${user.username || 'Не указан'}</p>
+                    <p><strong>Язык:</strong> ${user.language_code || 'Не указан'}</p>
+                `;
+            } else {
+                userInfo.style.display = 'none';
+            }
+        }
+
+        function initTelegramWebApp() {
+            if (tg) {
+                tg.ready();
+                tg.expand();
+                
+                user = tg.initDataUnsafe?.user;
+                
+                if (user) {
+                    updateStatus('✅ Данные пользователя получены автоматически', 'success');
+                    updateUserInfo();
+                } else {
+                    updateStatus('⚠️ Данные пользователя не получены. Требуется запрос разрешений.', 'error');
+                }
+                
+                console.log('Telegram WebApp initialized:', {
+                    user: user,
+                    platform: tg.platform,
+                    colorScheme: tg.colorScheme,
+                    initData: tg.initData
+                });
+            } else {
+                updateStatus('❌ Telegram WebApp не найден. Запустите в Telegram.', 'error');
+            }
+        }
+
+        function requestPermissions() {
+            if (!tg) {
+                updateStatus('❌ Telegram WebApp не доступен', 'error');
+                return;
+            }
+
+            updateStatus('Запрос разрешений...', 'info');
+
+            tg.requestWriteAccess((granted) => {
+                console.log('Write access granted:', granted);
+                
+                if (granted) {
+                    tg.requestContact((contactGranted) => {
+                        console.log('Contact access granted:', contactGranted);
+                        
+                        // Обновляем данные пользователя
+                        user = tg.initDataUnsafe?.user;
+                        
+                        if (user) {
+                            updateStatus('✅ Разрешения получены! Данные пользователя загружены.', 'success');
+                            updateUserInfo();
+                        } else {
+                            updateStatus('⚠️ Разрешения получены, но данные пользователя недоступны', 'error');
+                        }
+                    });
+                } else {
+                    updateStatus('❌ Разрешения не предоставлены', 'error');
+                }
+            });
+        }
+
+        function testAuth() {
+            if (!user) {
+                updateStatus('❌ Сначала получите данные пользователя', 'error');
+                return;
+            }
+
+            updateStatus('✅ Авторизация успешна! Данные переданы в приложение.', 'success');
+            
+            // Симулируем передачу данных в основное приложение
+            const authData = {
+                telegramId: user.id.toString(),
+                username: user.username,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                languageCode: user.language_code
+            };
+            
+            console.log('Auth data for main app:', authData);
+            
+            // В реальном приложении здесь будет переход к основному функционалу
+            alert(`Авторизация успешна!\n\nПользователь: ${user.first_name} ${user.last_name || ''}\nUsername: @${user.username || 'Не указан'}\nID: ${user.id}`);
+        }
+
+        function openMainApp() {
+            // В реальном приложении здесь будет переход к основному функционалу
+            const mainAppUrl = 'http://localhost:8080';
+            updateStatus(`Переход к основному приложению: ${mainAppUrl}`, 'info');
+            
+            // Открываем основное приложение
+            window.open(mainAppUrl, '_blank');
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', initTelegramWebApp);
+    </script>
+</body>
+</html>
