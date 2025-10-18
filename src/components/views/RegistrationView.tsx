@@ -5,7 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { googleSheetsService } from "@/services/googleSheetsService";
-import { TelegramUser } from "@/types/telegram";
+
+interface TelegramUser {
+  id: string;
+  first_name: string;
+  username?: string;
+}
 
 interface RegistrationViewProps {
   telegramUser: TelegramUser | null;
