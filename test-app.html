@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>Тест загрузки приложения</h1>
+    
+    <div id="status">
+        <div class="status info">Загружаем приложение...</div>
+    </div>
+    
+    <div id="root"></div>
+    
+    <script>
+        console.log('Test app script started');
+        
+        // Имитируем данные Telegram для тестирования
+        window.Telegram = {
+            WebApp: {
+                initData: '',
+                initDataUnsafe: {
+                    user: {
+                        id: 123456789,
+                        first_name: 'Test',
+                        last_name: 'User',
+                        username: 'testuser'
+                    }
+                },
+                ready: function() { console.log('Telegram WebApp ready'); },
+                expand: function() { console.log('Telegram WebApp expanded'); }
+            }
+        };
+        
+        // Загружаем основное приложение
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.crossOrigin = 'anonymous';
+        script.src = '/telegram-bot/assets/index-DNYZKdR7.js';
+        
+        script.onload = function() {
+            console.log('Main app script loaded');
+            document.getElementById('status').innerHTML = '<div class="status success">Приложение загружено успешно!</div>';
+        };
+        
+        script.onerror = function() {
+            console.error('Failed to load main app script');
+            document.getElementById('status').innerHTML = '<div class="status error">Ошибка загрузки приложения</div>';
+        };
+        
+        document.head.appendChild(script);
+        
+        // Загружаем CSS
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.crossOrigin = 'anonymous';
+        link.href = '/telegram-bot/assets/index-DhBXR_dc.css';
+        document.head.appendChild(link);
+        
+        console.log('Test app script completed');
+    </script>
+</body>
+</html>
