@@ -181,10 +181,13 @@ const RegistrationView = ({ telegramUser, onPromoCodeSuccess, onNoPromoCodeRegis
             </Button>
             
             <div className="text-xs text-gray-500 text-center mt-4">
+              <p>Имя: {displayName}</p>
               <p>Telegram ID: {displayId}</p>
               <p>Username: @{displayUsername}</p>
-              {window.Telegram?.WebApp && (
+              {window.Telegram?.WebApp ? (
                 <p className="text-green-600 mt-1">Telegram Web App</p>
+              ) : (
+                <p className="text-orange-600 mt-1">Тестовый режим</p>
               )}
             </div>
           </CardContent>

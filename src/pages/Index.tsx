@@ -68,15 +68,16 @@ const Index = () => {
       return;
     }
 
-    // Для локальной разработки - генерируем уникальный тестовый ID
+    // Для локальной разработки - используем более реалистичные тестовые данные
     const uniqueTestId = `test_user_${Math.random().toString(36).substr(2, 9)}`;
     console.log('No real Telegram data available. Using test user:', uniqueTestId);
     console.log('Приложение должно быть запущено через Telegram бота для получения реальных данных');
     
+    // Используем более реалистичные тестовые данные
     setTelegramUser({
       id: uniqueTestId,
-      first_name: 'Пользователь',
-      username: 'testuser'
+      first_name: 'Александр',
+      username: 'alex_user'
     });
   }, []);
 
