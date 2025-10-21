@@ -15,14 +15,14 @@ const Navigation = ({ currentView, onViewChange, onLogout }: NavigationProps) =>
         <Button
           variant={currentView === "dashboard" ? "default" : "ghost"}
           onClick={() => onViewChange("dashboard")}
-          className="flex-1 mx-1"
+          className={`flex-1 mx-1 ${currentView === "dashboard" ? "bg-orange-600 hover:bg-orange-700 text-white font-bold" : ""}`}
         >
           Главная
         </Button>
         <Button
           variant={currentView === "stats" ? "default" : "ghost"}
           onClick={() => onViewChange("stats")}
-          className="flex-1 mx-1"
+          className={`flex-1 mx-1 ${currentView === "stats" ? "bg-orange-600 hover:bg-orange-700 text-white font-bold" : ""}`}
         >
           <FileText className="w-4 h-4 mr-1" />
           Статистика
@@ -30,7 +30,7 @@ const Navigation = ({ currentView, onViewChange, onLogout }: NavigationProps) =>
         <Button
           variant={currentView === "network" ? "default" : "ghost"}
           onClick={() => onViewChange("network")}
-          className="flex-1 mx-1"
+          className={`flex-1 mx-1 ${currentView === "network" ? "bg-orange-600 hover:bg-orange-700 text-white font-bold" : ""}`}
         >
           <Users className="w-4 h-4 mr-1" />
           Сеть
