@@ -10,10 +10,11 @@ interface PersonalDataViewProps {
   onComplete: (data: { firstName: string; lastName: string; phone: string; email: string }) => void;
   onBack?: () => void; // Добавляем опциональный проп для кнопки "Назад"
   loading: boolean;
+  telegramUser?: { first_name: string; username?: string } | null; // Добавляем данные Telegram пользователя
 }
 
-const PersonalDataView = ({ onComplete, onBack, loading }: PersonalDataViewProps) => {
-  const [firstName, setFirstName] = useState("");
+const PersonalDataView = ({ onComplete, onBack, loading, telegramUser }: PersonalDataViewProps) => {
+  const [firstName, setFirstName] = useState(telegramUser?.first_name || "");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("+7");
   const [email, setEmail] = useState("");

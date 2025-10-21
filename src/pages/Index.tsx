@@ -75,7 +75,7 @@ const Index = () => {
     
     setTelegramUser({
       id: uniqueTestId,
-      first_name: 'Тестовый пользователь',
+      first_name: 'Пользователь',
       username: 'testuser'
     });
   }, []);
@@ -209,6 +209,7 @@ const Index = () => {
           onComplete={handlePersonalDataComplete}
           onBack={handleBackToRegistration}
           loading={partnerLoading}
+          telegramUser={telegramUser}
         />
       );
     }
@@ -302,6 +303,7 @@ const Index = () => {
         onComplete={handlePersonalDataComplete}
         onBack={handleBackToRegistration}
         loading={partnerLoading}
+        telegramUser={telegramUser}
       />
     );
   }
