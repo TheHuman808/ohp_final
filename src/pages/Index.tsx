@@ -24,15 +24,22 @@ const Index = () => {
   const [isExistingUserLogin, setIsExistingUserLogin] = useState(false);
 
   useEffect(() => {
-    console.log('=== TELEGRAM DATA INITIALIZATION ===');
-    
-    // Инициализируем Telegram Web App
-    if (window.Telegram?.WebApp) {
-      const webApp = window.Telegram.WebApp;
-      if (webApp.ready) webApp.ready();
-      if (webApp.expand) webApp.expand();
-      console.log('Telegram Web App initialized');
-    }
+    const initializeTelegramData = () => {
+      console.log('=== TELEGRAM DATA INITIALIZATION ===');
+      console.log('window.Telegram:', window.Telegram);
+      console.log('window.Telegram?.WebApp:', window.Telegram?.WebApp);
+      
+      // Инициализируем Telegram Web App
+      if (window.Telegram?.WebApp) {
+        const webApp = window.Telegram.WebApp;
+        console.log('WebApp object:', webApp);
+        console.log('WebApp.initData:', webApp.initData);
+        console.log('WebApp.initDataUnsafe:', webApp.initDataUnsafe);
+        
+        if (webApp.ready) webApp.ready();
+        if (webApp.expand) webApp.expand();
+        console.log('Telegram Web App initialized');
+      }
     
     // Получаем реальные данные из Telegram Web App
     if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
@@ -41,7 +48,9 @@ const Index = () => {
         id: user.id,
         first_name: user.first_name,
         username: user.username,
-        language_code: user.language_code
+        language_code: user.language_code,
+        last_name: user.last_name,
+        is_premium: user.is_premium
       });
       
       setTelegramUser({
@@ -50,6 +59,28 @@ const Index = () => {
         username: user.username || undefined
       });
       return;
+    }
+    
+    // Альтернативный способ получения данных через initData
+    if (window.Telegram?.WebApp?.initData) {
+      console.log('Trying to parse initData:', window.Telegram.WebApp.initData);
+      try {
+        const urlParams = new URLSearchParams(window.Telegram.WebApp.initData);
+        const userParam = urlParams.get('user');
+        if (userParam) {
+          const user = JSON.parse(decodeURIComponent(userParam));
+          console.log('Parsed user from initData:', user);
+          
+          setTelegramUser({
+            id: user.id.toString(),
+            first_name: user.first_name,
+            username: user.username || undefined
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('Error parsing initData:', error);
+      }
     }
 
     // Fallback - проверяем URL параметры (для тестирования)
@@ -73,12 +104,39 @@ const Index = () => {
     console.log('No real Telegram data available. Using test user:', uniqueTestId);
     console.log('Приложение должно быть запущено через Telegram бота для получения реальных данных');
     
-    // Используем более реалистичные тестовые данные
-    setTelegramUser({
-      id: uniqueTestId,
-      first_name: 'Александр',
-      username: 'alex_user'
-    });
+      // Используем более реалистичные тестовые данные
+      setTelegramUser({
+        id: uniqueTestId,
+        first_name: 'Александр',
+        username: 'alex_user'
+      });
+    };
+
+    // Запускаем инициализацию сразу
+    initializeTelegramData();
+    
+    // Также запускаем с задержкой на случай, если Telegram Web App загружается асинхронно
+    const timeoutId = setTimeout(initializeTelegramData, 1000);
+    
+    // Добавляем обработчик события для Telegram Web App
+    const handleTelegramEvent = () => {
+      console.log('Telegram Web App event triggered');
+      initializeTelegramData();
+    };
+    
+    // Слушаем события Telegram Web App
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.onEvent('viewportChanged', handleTelegramEvent);
+      window.Telegram.WebApp.onEvent('themeChanged', handleTelegramEvent);
+    }
+    
+    return () => {
+      clearTimeout(timeoutId);
+      if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.offEvent('viewportChanged', handleTelegramEvent);
+        window.Telegram.WebApp.offEvent('themeChanged', handleTelegramEvent);
+      }
+    };
   }, []);
 
   const { 
