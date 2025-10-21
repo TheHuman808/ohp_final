@@ -46,7 +46,7 @@ class GoogleSheetsService {
     this.apiKey = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || 'AIzaSyD1-O9ID7-2EFVum1ITNRyrhJYtvlY5wKg';
     this.webAppUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbyCHYl8Cw_pyUUtGigdHzv7VyU9Il4Gnfke1VFbTDu7-nA0Ux1at7ReaUljCr_gwW2E/exec';
     
-    console.log('🚀🚀🚀 GoogleSheetsService NEW v19.0 ULTIMATE FIX 🚀🚀🚀');
+    console.log('🚀🚀🚀 GoogleSheetsService NEW v8.0 ULTIMATE FIX 🚀🚀🚀');
     console.log('Spreadsheet ID:', this.spreadsheetId ? `${this.spreadsheetId.substring(0, 10)}...` : 'NOT SET');
     console.log('API Key for read:', this.apiKey ? `${this.apiKey.substring(0, 10)}...` : 'NOT SET');
     console.log('Web App URL:', this.webAppUrl ? `${this.webAppUrl.substring(0, 30)}...` : 'NOT SET');
@@ -308,7 +308,7 @@ class GoogleSheetsService {
     inviterCode?: string; // Сделаем опциональным
   }): Promise<{ success: boolean; promoCode?: string; error?: string }> {
     try {
-      console.log('🚀🚀🚀 REGISTER PARTNER START v8.2 - ' + Date.now() + ' 🚀🚀🚀');
+      console.log('🚀🚀🚀 REGISTER PARTNER START v8.0 - ' + Date.now() + ' 🚀🚀🚀');
       console.log('🔗 CURRENT WEB APP URL:', this.webAppUrl);
       console.log('Registering NEW partner:', partnerData);
       
@@ -320,7 +320,7 @@ class GoogleSheetsService {
       }
 
       // ИСПРАВЛЕНИЕ: Проверяем промокод пригласившего только если он есть и не "NOPROMO"
-      console.log('🚀🚀🚀 INVITER CODE CHECK START v8.2 - ' + Date.now() + ' 🚀🚀🚀');
+      console.log('🚀🚀🚀 INVITER CODE CHECK START v8.0 - ' + Date.now() + ' 🚀🚀🚀');
       console.log('partnerData.inviterCode:', partnerData.inviterCode);
       console.log('partnerData.inviterCode type:', typeof partnerData.inviterCode);
       console.log('partnerData.inviterCode === "NOPROMO":', partnerData.inviterCode === 'NOPROMO');
@@ -409,11 +409,10 @@ class GoogleSheetsService {
     }
 
     try {
-      const fullWebAppUrl = `${this.webAppUrl}?v=${Date.now()}&bust=${Math.random()}`; // Ultra aggressive cache busting
       console.log('=== WRITING TO APPS SCRIPT ===');
       console.log('Action:', action);
       console.log('Data:', data);
-      console.log('URL:', fullWebAppUrl);
+      console.log('URL:', this.webAppUrl);
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -441,7 +440,7 @@ class GoogleSheetsService {
       
       console.log('Request body (JSON):', requestOptions.body); // Added this line
 
-          const response = await fetch(fullWebAppUrl, requestOptions);
+      const response = await fetch(this.webAppUrl, requestOptions);
       
       clearTimeout(timeoutId);
 

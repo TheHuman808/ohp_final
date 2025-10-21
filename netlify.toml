@@ -1,0 +1,28 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[dev]
+  command = "npm run dev"
+  port = 8080
+  publish = "dist"
+
+# Force rebuild
+[context.production]
+  command = "npm run build && echo 'NETLIFY MAXIMUM FORCE REBUILD v19.0'"
+
+# Maximum force rebuild
+[context.deploy-preview]
+  command = "npm run build && echo 'NETLIFY MAXIMUM FORCE PREVIEW v19.0'"
+
+# Force rebuild for all contexts
+[context.branch-deploy]
+  command = "npm run build && echo 'NETLIFY MAXIMUM FORCE BRANCH v19.0'"

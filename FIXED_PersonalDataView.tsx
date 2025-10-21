@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,49 +30,16 @@ const PersonalDataView = ({ onComplete, onBack, loading }: PersonalDataViewProps
       });
       return;
     }
-
-    // Простая валидация email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast({
-        title: "Ошибка",
-        description: "Введите корректный email адрес",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Простая валидация телефона
-    const phoneRegex = /^[\+]?[1-9][\d]{10,14}$/;
-    if (!phoneRegex.test(phone.replace(/\s+/g, ''))) {
-      toast({
-        title: "Ошибка",
-        description: "Введите корректный номер телефона",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    console.log('Validation passed, submitting data...');
-    onComplete({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      phone: phone.trim(),
-      email: email.trim()
-    });
+    onComplete({ firstName, lastName, phone, email });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-md mx-auto pt-20">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="w-full max-w-md">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-gray-800">
-              Персональные данные
-            </CardTitle>
-            <CardDescription>
-              Заполните ваши контактные данные для завершения регистрации
-            </CardDescription>
+            <CardTitle className="text-2xl font-bold text-gray-800">Персональные данные</CardTitle>
+            <CardDescription>Заполните ваши контактные данные для завершения регистрации</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>

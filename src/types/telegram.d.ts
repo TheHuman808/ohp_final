@@ -12,6 +12,20 @@ declare global {
             language_code?: string;
           };
         };
+        ready: () => void;
+        expand: () => void;
+        close: () => void;
+        MainButton: {
+          text: string;
+          color: string;
+          textColor: string;
+          isVisible: boolean;
+          isActive: boolean;
+          setText: (text: string) => void;
+          onClick: (callback: () => void) => void;
+          show: () => void;
+          hide: () => void;
+        };
       };
     };
   }

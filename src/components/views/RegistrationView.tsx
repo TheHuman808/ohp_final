@@ -129,7 +129,7 @@ const RegistrationView = ({ telegramUser, onPromoCodeSuccess, onExistingUserLogi
             </div>
             <Button 
               onClick={handlePromoCodeSubmit}
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold"
               disabled={partnerLoading || validating}
             >
               {validating ? "Проверка промокода..." : partnerLoading ? "Загрузка..." : "Создать новый аккаунт"}
@@ -157,9 +157,9 @@ const RegistrationView = ({ telegramUser, onPromoCodeSuccess, onExistingUserLogi
               <p>Telegram ID: {displayId}</p>
               <p>Username: @{displayUsername}</p>
               {window.Telegram?.WebApp ? (
-                <p className="text-green-600 mt-1">✓ Telegram Web App</p>
+                <p className="text-green-600 mt-1">Telegram Web App</p>
               ) : (
-                <p className="text-orange-600 mt-1">⚠ Тестовый режим</p>
+                <p className="text-orange-600 mt-1">Тестовый режим</p>
               )}
             </div>
           </CardContent>

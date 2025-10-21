@@ -24,24 +24,35 @@ const Index = () => {
   const [isExistingUserLogin, setIsExistingUserLogin] = useState(false);
 
   useEffect(() => {
+    console.log('=== TELEGRAM DATA INITIALIZATION ===');
+    
+    // Инициализируем Telegram Web App
+    if (window.Telegram?.WebApp) {
+      const webApp = window.Telegram.WebApp;
+      if (webApp.ready) webApp.ready();
+      if (webApp.expand) webApp.expand();
+      console.log('Telegram Web App initialized');
+    }
+    
     // Получаем реальные данные из Telegram Web App
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
-      const telegramData = window.Telegram.WebApp.initDataUnsafe;
-      console.log('Real Telegram Web App data:', telegramData);
+    if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+      const user = window.Telegram.WebApp.initDataUnsafe.user;
+      console.log('Real Telegram user data received:', {
+        id: user.id,
+        first_name: user.first_name,
+        username: user.username,
+        language_code: user.language_code
+      });
       
-      if (telegramData.user) {
-        const user = telegramData.user;
-        console.log('Real Telegram user data received:', user);
-        setTelegramUser({
-          id: user.id.toString(),
-          first_name: user.first_name,
-          username: user.username || undefined
-        });
-        return;
-      }
+      setTelegramUser({
+        id: user.id.toString(),
+        first_name: user.first_name,
+        username: user.username || undefined
+      });
+      return;
     }
 
-    // Fallback - проверяем URL параметры
+    // Fallback - проверяем URL параметры (для тестирования)
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     const first_name = params.get('first_name');
@@ -54,16 +65,19 @@ const Index = () => {
         first_name,
         username: username || undefined
       });
-    } else {
-      // Временный fallback для разработки - генерируем уникальный ID
-      const uniqueTestId = `test_user_${Math.random().toString(36).substr(2, 9)}`;
-      console.log('No real Telegram data, generating unique test user:', uniqueTestId);
-      setTelegramUser({
-        id: uniqueTestId,
-        first_name: 'Test User',
-        username: 'testuser'
-      });
+      return;
     }
+
+    // Для локальной разработки - генерируем уникальный тестовый ID
+    const uniqueTestId = `test_user_${Math.random().toString(36).substr(2, 9)}`;
+    console.log('No real Telegram data available. Using test user:', uniqueTestId);
+    console.log('Приложение должно быть запущено через Telegram бота для получения реальных данных');
+    
+    setTelegramUser({
+      id: uniqueTestId,
+      first_name: 'Тестовый пользователь',
+      username: 'testuser'
+    });
   }, []);
 
   const { 
@@ -105,18 +119,27 @@ const Index = () => {
   };
 
   const handleRegistrationSuccess = () => {
-    console.log('New user registration completed successfully');
+    console.log('=== NEW USER REGISTRATION COMPLETED SUCCESSFULLY ===');
     setLoggedOut(false);
     setIsExistingUserLogin(false);
+    setInviterCode(""); // Очищаем промокод после регистрации
     // После успешной регистрации сразу переходим в дашборд
     setCurrentView("dashboard");
-    // Обновляем данные
+    // Обновляем данные партнера и комиссий
     setForceRefresh(prev => prev + 1);
     refreshCommissions();
+    console.log('Redirecting to dashboard...');
   };
 
   const handleViewChange = (view: "registration" | "dashboard" | "stats" | "network" | "personalData") => {
     setCurrentView(view);
+  };
+
+  const handleBackToRegistration = () => {
+    console.log('Going back to registration screen');
+    setCurrentView("registration");
+    setInviterCode(""); // Очищаем промокод при возврате
+    setIsExistingUserLogin(false);
   };
 
   const handleLogout = () => {
@@ -145,16 +168,26 @@ const Index = () => {
     console.log('Inviter code:', inviterCode);
     console.log('Telegram user:', telegramUser);
     
-    const result = await registerPartner(
-      inviterCode,
-      personalData,
-      telegramUser.username
-    );
-    
-    console.log('Registration result:', result);
-    
-    if (result.success) {
-      handleRegistrationSuccess();
+    try {
+      const result = await registerPartner(
+        inviterCode,
+        personalData,
+        telegramUser.username
+      );
+      
+      console.log('Registration result:', result);
+      
+      if (result.success) {
+        console.log('Registration successful, redirecting to dashboard');
+        handleRegistrationSuccess();
+      } else {
+        console.log('Registration failed:', result.error);
+        // Показываем ошибку пользователю
+        alert(`Ошибка регистрации: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      alert(`Ошибка регистрации: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
     }
   };
 
@@ -164,6 +197,7 @@ const Index = () => {
       return (
         <PersonalDataView
           onComplete={handlePersonalDataComplete}
+          onBack={handleBackToRegistration}
           loading={partnerLoading}
         />
       );
@@ -255,6 +289,7 @@ const Index = () => {
     return (
       <PersonalDataView
         onComplete={handlePersonalDataComplete}
+        onBack={handleBackToRegistration}
         loading={partnerLoading}
       />
     );

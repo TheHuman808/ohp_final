@@ -141,15 +141,15 @@ const TestAppsScriptConnection = () => {
               <div className="text-sm space-y-1">
                 <div className={envWebAppUrl ? 'text-green-700' : 'text-orange-600'}>
                   <strong>VITE_GOOGLE_APPS_SCRIPT_URL:</strong> 
-                  {envWebAppUrl ? ' ✅ Установлена из ENV' : ' ⚠️ Используется fallback'}
+                  {envWebAppUrl ? ' Установлена из ENV' : ' Используется fallback'}
                 </div>
                 <div className={envSheetsId ? 'text-green-700' : 'text-orange-600'}>
                   <strong>VITE_GOOGLE_SHEETS_ID:</strong> 
-                  {envSheetsId ? ' ✅ Установлена из ENV' : ' ⚠️ Используется fallback'}
+                  {envSheetsId ? ' Установлена из ENV' : ' Используется fallback'}
                 </div>
                 <div className={envApiKey ? 'text-green-700' : 'text-orange-600'}>
                   <strong>VITE_GOOGLE_SHEETS_API_KEY:</strong> 
-                  {envApiKey ? ' ✅ Установлена из ENV' : ' ⚠️ Используется fallback'}
+                  {envApiKey ? ' Установлена из ENV' : ' Используется fallback'}
                 </div>
               </div>
             </div>
@@ -176,7 +176,7 @@ const TestAppsScriptConnection = () => {
               <Button 
                 onClick={testRegistration}
                 disabled={testing}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold"
               >
                 {testing ? "Тестируем..." : "Тест регистрации"}
               </Button>

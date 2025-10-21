@@ -68,6 +68,10 @@ export const usePartner = (telegramId: string, forceRefresh: number = 0) => {
       console.log('=== STARTING NEW PARTNER REGISTRATION ===');
       console.log('Personal data:', personalData);
       console.log('Inviter code:', inviterCode);
+      console.log('Inviter code type:', typeof inviterCode);
+      console.log('Inviter code === "":', inviterCode === '');
+      console.log('Inviter code.trim() !== "":', inviterCode?.trim() !== '');
+      console.log('Processed inviterCode:', inviterCode && inviterCode.trim() !== '' ? inviterCode : "NOPROMO");
       console.log('Telegram ID:', telegramId);
       console.log('Username:', username);
       
@@ -79,7 +83,7 @@ export const usePartner = (telegramId: string, forceRefresh: number = 0) => {
         phone: personalData.phone,
         email: personalData.email,
         username,
-        inviterCode
+        inviterCode: inviterCode && inviterCode.trim() !== '' ? inviterCode : "NOPROMO" // Отправляем NOPROMO если нет промокода
       });
 
       console.log('Registration result:', result);
@@ -87,8 +91,16 @@ export const usePartner = (telegramId: string, forceRefresh: number = 0) => {
       if (result.success && result.promoCode) {
         console.log('New partner registration successful, refreshing data...');
         
+        // Ждем немного, чтобы данные успели записаться в Google Sheets
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
         // Принудительно обновляем данные после успешной регистрации
-        await fetchPartner();
+        try {
+          await fetchPartner();
+        } catch (refreshError) {
+          console.warn('Failed to refresh partner data after registration:', refreshError);
+          // Не прерываем процесс, если не удалось обновить данные
+        }
         
         return { success: true, promoCode: result.promoCode };
       } else {
