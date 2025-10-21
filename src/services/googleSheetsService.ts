@@ -44,15 +44,15 @@ class GoogleSheetsService {
   constructor() {
     this.spreadsheetId = import.meta.env.VITE_GOOGLE_SHEETS_ID || '1fh4-V4n0ho-RF06xcxl0JYxK5xQf8WOMSYy-tF6vRkU';
     this.apiKey = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || 'AIzaSyD1-O9ID7-2EFVum1ITNRyrhJYtvlY5wKg';
-    this.webAppUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbyCHYl8Cw_pyUUtGigdHzv7VyU9Il4Gnfke1VFbTDu7-nA0Ux1at7ReaUljCr_gwW2E/exec';
+    this.webAppUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxqSanxKScbe1mgHrcHp-Jf35R6PQQIp-p6QdhE-YAwii0XYBkGdvSg8B-CTPrY9GZJ/exec';
     
     console.log('🚀🚀🚀 GoogleSheetsService NEW v19.0 ULTIMATE FIX 🚀🚀🚀');
     console.log('Spreadsheet ID:', this.spreadsheetId ? `${this.spreadsheetId.substring(0, 10)}...` : 'NOT SET');
     console.log('API Key for read:', this.apiKey ? `${this.apiKey.substring(0, 10)}...` : 'NOT SET');
     console.log('Web App URL:', this.webAppUrl ? `${this.webAppUrl.substring(0, 30)}...` : 'NOT SET');
     console.log('Full Web App URL:', this.webAppUrl);
-    console.log('🔍 URL CHECK: Should contain AKfycbyCHYl8Cw_pyUUtGigdHzv7VyU9Il4Gnfke1VFbTDu7-nA0Ux1at7ReaUljCr_gwW2E');
-    console.log('🔍 URL contains correct ID:', this.webAppUrl.includes('AKfycbyCHYl8Cw_pyUUtGigdHzv7VyU9Il4Gnfke1VFbTDu7-nA0Ux1at7ReaUljCr_gwW2E'));
+    console.log('🔍 URL CHECK: Should contain AKfycbxqSanxKScbe1mgHrcHp-Jf35R6PQQIp-p6QdhE-YAwii0XYBkGdvSg8B-CTPrY9GZJ');
+    console.log('🔍 URL contains correct ID:', this.webAppUrl.includes('AKfycbxqSanxKScbe1mgHrcHp-Jf35R6PQQIp-p6QdhE-YAwii0XYBkGdvSg8B-CTPrY9GZJ'));
     
     if (!this.apiKey || !this.spreadsheetId) {
       console.warn('Google Sheets API не настроен полностью. Установите переменные окружения VITE_GOOGLE_SHEETS_API_KEY и VITE_GOOGLE_SHEETS_ID');
