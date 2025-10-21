@@ -15,9 +15,34 @@ interface PersonalDataViewProps {
 const PersonalDataView = ({ onComplete, onBack, loading }: PersonalDataViewProps) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState("+7");
   const [email, setEmail] = useState("");
   const { toast } = useToast();
+
+  const formatPhoneNumber = (value: string) => {
+    // Удаляем все нецифровые символы кроме +
+    const cleaned = value.replace(/[^\d+]/g, '');
+    
+    // Если начинается не с +7, добавляем +7
+    if (!cleaned.startsWith('+7')) {
+      if (cleaned.startsWith('7')) {
+        return '+7' + cleaned.slice(1);
+      } else if (cleaned.startsWith('8')) {
+        return '+7' + cleaned.slice(1);
+      } else if (cleaned.startsWith('+')) {
+        return '+7' + cleaned.slice(1);
+      } else {
+        return '+7' + cleaned;
+      }
+    }
+    
+    return cleaned;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhone(formatted);
+  };
 
   const handleSubmit = () => {
     console.log('=== PERSONAL DATA SUBMIT ===');
@@ -43,12 +68,12 @@ const PersonalDataView = ({ onComplete, onBack, loading }: PersonalDataViewProps
       return;
     }
 
-    // Простая валидация телефона
-    const phoneRegex = /^[\+]?[1-9][\d]{10,14}$/;
+    // Валидация российского телефона
+    const phoneRegex = /^\+7\d{10}$/;
     if (!phoneRegex.test(phone.replace(/\s+/g, ''))) {
       toast({
         title: "Ошибка",
-        description: "Введите корректный номер телефона",
+        description: "Введите корректный российский номер телефона (+7XXXXXXXXXX)",
         variant: "destructive"
       });
       return;
@@ -105,7 +130,7 @@ const PersonalDataView = ({ onComplete, onBack, loading }: PersonalDataViewProps
                 type="tel"
                 placeholder="+7 (999) 123-45-67"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={handlePhoneChange}
                 disabled={loading}
               />
             </div>
@@ -122,7 +147,7 @@ const PersonalDataView = ({ onComplete, onBack, loading }: PersonalDataViewProps
             </div>
             <Button 
               onClick={handleSubmit}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
               disabled={loading}
             >
               {loading ? "Регистрация..." : "Завершить регистрацию"}

@@ -15,11 +15,12 @@ interface TelegramUser {
 interface RegistrationViewProps {
   telegramUser: TelegramUser | null;
   onPromoCodeSuccess: (inviterCode: string) => void;
+  onNoPromoCodeRegistration: () => void;
   onExistingUserLogin: () => void;
   partnerLoading: boolean;
 }
 
-const RegistrationView = ({ telegramUser, onPromoCodeSuccess, onExistingUserLogin, partnerLoading }: RegistrationViewProps) => {
+const RegistrationView = ({ telegramUser, onPromoCodeSuccess, onNoPromoCodeRegistration, onExistingUserLogin, partnerLoading }: RegistrationViewProps) => {
   const [inviterCode, setInviterCode] = useState("");
   const [validating, setValidating] = useState(false);
   const { toast } = useToast();
@@ -90,6 +91,15 @@ const RegistrationView = ({ telegramUser, onPromoCodeSuccess, onExistingUserLogi
     }
   };
 
+  const handleNoPromoCodeRegistration = () => {
+    console.log('No promo code registration clicked for user:', telegramUser);
+    toast({
+      title: "Регистрация",
+      description: "Переходим к регистрации без промокода...",
+    });
+    onNoPromoCodeRegistration();
+  };
+
   const handleExistingUserLogin = () => {
     console.log('Existing user login clicked for user:', telegramUser);
     toast({
@@ -129,10 +139,27 @@ const RegistrationView = ({ telegramUser, onPromoCodeSuccess, onExistingUserLogi
             </div>
             <Button 
               onClick={handlePromoCodeSubmit}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
               disabled={partnerLoading || validating}
             >
-              {validating ? "Проверка промокода..." : partnerLoading ? "Загрузка..." : "Создать новый аккаунт"}
+              {validating ? "Проверка промокода..." : partnerLoading ? "Загрузка..." : "Создать новый аккаунт с промокодом"}
+            </Button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">или</span>
+              </div>
+            </div>
+            
+            <Button 
+              onClick={handleNoPromoCodeRegistration}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold"
+              disabled={partnerLoading}
+            >
+              {partnerLoading ? "Загрузка..." : "Создать новый аккаунт без промокода"}
             </Button>
             
             <div className="relative">
@@ -156,10 +183,8 @@ const RegistrationView = ({ telegramUser, onPromoCodeSuccess, onExistingUserLogi
             <div className="text-xs text-gray-500 text-center mt-4">
               <p>Telegram ID: {displayId}</p>
               <p>Username: @{displayUsername}</p>
-              {window.Telegram?.WebApp ? (
+              {window.Telegram?.WebApp && (
                 <p className="text-green-600 mt-1">Telegram Web App</p>
-              ) : (
-                <p className="text-orange-600 mt-1">Тестовый режим</p>
               )}
             </div>
           </CardContent>

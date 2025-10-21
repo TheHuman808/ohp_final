@@ -110,6 +110,15 @@ const Index = () => {
     setCurrentView("personalData");
   };
 
+  const handleNoPromoCodeRegistration = () => {
+    console.log('No promo code registration initiated');
+    setInviterCode(""); // Очищаем промокод
+    setLoggedOut(false);
+    setIsExistingUserLogin(false);
+    // Переходим к регистрации БЕЗ промокода
+    setCurrentView("personalData");
+  };
+
   const handleExistingUserLogin = () => {
     console.log('Existing user login initiated for Telegram ID:', telegramUser?.id);
     setLoggedOut(false);
@@ -165,12 +174,13 @@ const Index = () => {
     
     console.log('=== STARTING NEW USER REGISTRATION PROCESS ===');
     console.log('Personal data:', personalData);
-    console.log('Inviter code:', inviterCode);
+    console.log('Inviter code:', inviterCode || 'NO PROMO CODE');
     console.log('Telegram user:', telegramUser);
     
     try {
+      // Если есть промокод, используем его, иначе регистрируем без промокода
       const result = await registerPartner(
-        inviterCode,
+        inviterCode || "", // Пустая строка если нет промокода
         personalData,
         telegramUser.username
       );
@@ -207,6 +217,7 @@ const Index = () => {
       <RegistrationView
         telegramUser={telegramUser}
         onPromoCodeSuccess={handlePromoCodeSuccess}
+        onNoPromoCodeRegistration={handleNoPromoCodeRegistration}
         onExistingUserLogin={handleExistingUserLogin}
         partnerLoading={partnerLoading}
       />
@@ -300,6 +311,7 @@ const Index = () => {
     <RegistrationView
       telegramUser={telegramUser}
       onPromoCodeSuccess={handlePromoCodeSuccess}
+      onNoPromoCodeRegistration={handleNoPromoCodeRegistration}
       onExistingUserLogin={handleExistingUserLogin}
       partnerLoading={partnerLoading}
     />
