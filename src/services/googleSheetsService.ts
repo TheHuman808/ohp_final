@@ -418,30 +418,24 @@ class GoogleSheetsService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      // Попробуем сначала с JSONP, если не получится - с CORS
+      // Попробуем сначала GET запрос, так как Google Apps Script лучше работает с GET
+      const getUrl = `${this.webAppUrl}?action=${encodeURIComponent(action)}&data=${encodeURIComponent(JSON.stringify(data))}`;
+      console.log('Trying GET request to:', getUrl);
+      
       const requestOptions = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          action: action,
-          data: data
-        }),
-        signal: controller.signal,
-        mode: 'cors' as RequestMode
+        method: 'GET',
+        mode: 'cors' as RequestMode,
+        signal: controller.signal
       };
 
       console.log('Request options:', {
         method: requestOptions.method,
-        headers: requestOptions.headers,
-        bodyLength: requestOptions.body.length
+        mode: requestOptions.mode
       });
       
-      console.log('Request body (JSON):', requestOptions.body); // Added this line
+      console.log('Request URL:', getUrl);
 
-          const response = await fetch(fullWebAppUrl, requestOptions);
+      const response = await fetch(getUrl, requestOptions);
       
       clearTimeout(timeoutId);
 
@@ -475,11 +469,16 @@ class GoogleSheetsService {
           const getUrl = `${this.webAppUrl}?action=${encodeURIComponent(action)}&data=${encodeURIComponent(JSON.stringify(data))}`;
           console.log('Trying GET request to:', getUrl);
           
+          const getController = new AbortController();
+          const getTimeoutId = setTimeout(() => getController.abort(), 30000);
+          
           const getResponse = await fetch(getUrl, {
             method: 'GET',
             mode: 'cors',
-            signal: controller.signal
+            signal: getController.signal
           });
+          
+          clearTimeout(getTimeoutId);
           
           if (getResponse.ok) {
             const result = await getResponse.json();
