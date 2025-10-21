@@ -251,12 +251,23 @@ const Index = () => {
         handleRegistrationSuccess();
       } else {
         console.log('Registration failed:', result.error);
-        // Показываем ошибку пользователю
-        alert(`Ошибка регистрации: ${result.error}`);
+        
+        // Если ошибка "Load failed", показываем более понятное сообщение
+        if (result.error?.includes('Load failed')) {
+          alert('Ошибка подключения к серверу. Пожалуйста, проверьте интернет-соединение и попробуйте еще раз.');
+        } else {
+          alert(`Ошибка регистрации: ${result.error}`);
+        }
       }
     } catch (error) {
       console.error('Registration error:', error);
-      alert(`Ошибка регистрации: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+      
+      // Если ошибка сети, показываем понятное сообщение
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        alert('Ошибка подключения к серверу. Пожалуйста, проверьте интернет-соединение и попробуйте еще раз.');
+      } else {
+        alert(`Ошибка регистрации: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+      }
     }
   };
 
@@ -349,10 +360,31 @@ const Index = () => {
   }
 
   // Если это попытка входа существующего пользователя, но партнер не найден
-  if (isExistingUserLogin && !partner) {
-    console.log('Existing user not found, redirecting to registration');
-    setIsExistingUserLogin(false);
-    setCurrentView("registration");
+  if (isExistingUserLogin && !partner && !partnerLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div className="max-w-md mx-auto pt-20">
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center">
+            <div className="text-red-500 text-6xl mb-4">❌</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Аккаунт не найден
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Ваш аккаунт не найден в системе. Пожалуйста, зарегистрируйтесь.
+            </p>
+            <button
+              onClick={() => {
+                setIsExistingUserLogin(false);
+                setCurrentView("registration");
+              }}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg"
+            >
+              Зарегистрироваться
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Если мы в процессе регистрации НОВОГО пользователя
