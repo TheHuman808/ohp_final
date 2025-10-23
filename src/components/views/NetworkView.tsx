@@ -112,11 +112,17 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
       
       {/* Кнопка выхода в самом низу страницы */}
       {onLogout && (
-        <div className="bg-white border-t border-gray-200 p-4 md:hidden">
+        <div className="bg-white border-t border-gray-200 p-4 md:hidden relative z-10 min-h-[60px]">
           <Button
             variant="outline"
-            onClick={onLogout}
-            className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Logout button clicked on mobile');
+              onLogout();
+            }}
+            className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 relative z-20 min-h-[44px]"
+            style={{ touchAction: 'manipulation', pointerEvents: 'auto' }}
           >
             <LogOut className="w-4 h-4 mr-2" />
             Выйти
