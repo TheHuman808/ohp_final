@@ -570,6 +570,8 @@ class GoogleSheetsService {
                 
                 const colorMap: { [key: string]: { bg: string; text: string } } = {
                   'blue': { bg: 'from-blue-100 to-blue-200', text: 'text-blue-800' },
+                  'cyan': { bg: 'from-cyan-100 to-cyan-200', text: 'text-cyan-800' },
+                  'teal': { bg: 'from-teal-100 to-teal-200', text: 'text-teal-800' },
                   'green': { bg: 'from-green-100 to-green-200', text: 'text-green-800' },
                   'orange': { bg: 'from-orange-100 to-orange-200', text: 'text-orange-800' },
                   'purple': { bg: 'from-purple-100 to-purple-200', text: 'text-purple-800' },
@@ -652,17 +654,17 @@ class GoogleSheetsService {
       {
         level: 2,
         percentage: 2,
-        color: { bg: 'from-green-100 to-green-200', text: 'text-green-800' }
+        color: { bg: 'from-cyan-100 to-cyan-200', text: 'text-cyan-800' }
       },
       {
         level: 3,
         percentage: 4,
-        color: { bg: 'from-orange-100 to-orange-200', text: 'text-orange-800' }
+        color: { bg: 'from-teal-100 to-teal-200', text: 'text-teal-800' }
       },
       {
         level: 4,
         percentage: 8,
-        color: { bg: 'from-purple-100 to-purple-200', text: 'text-purple-800' }
+        color: { bg: 'from-green-100 to-green-200', text: 'text-green-800' }
       }
     ];
   }

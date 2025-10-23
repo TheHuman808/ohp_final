@@ -21,24 +21,24 @@ export const PARTNER_LEVELS: LevelConfig[] = [
     level: 2,
     percentage: 2,
     color: {
-      bg: "from-green-100 to-green-200",
-      text: "text-green-800"
+      bg: "from-cyan-100 to-cyan-200",
+      text: "text-cyan-800"
     }
   },
   {
     level: 3,
     percentage: 4,
     color: {
-      bg: "from-orange-100 to-orange-200",
-      text: "text-orange-800"
+      bg: "from-teal-100 to-teal-200",
+      text: "text-teal-800"
     }
   },
   {
     level: 4,
     percentage: 8,
     color: {
-      bg: "from-purple-100 to-purple-200",
-      text: "text-purple-800"
+      bg: "from-green-100 to-green-200",
+      text: "text-green-800"
     }
   }
 ];
