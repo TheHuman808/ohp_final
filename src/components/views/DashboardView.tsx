@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import { Users, TrendingUp, Share2, LogOut } from "lucide-react";
 import type { PartnerRecord, CommissionRecord } from "@/services/googleSheetsService";
+import { useLevelsConfig } from "@/hooks/useLevelsConfig";
 
 interface DashboardViewProps {
   partner: PartnerRecord;
@@ -14,6 +15,7 @@ interface DashboardViewProps {
 }
 
 const DashboardView = ({ partner, commissions, currentView, onViewChange, onLogout }: DashboardViewProps) => {
+  const { levels, loading: levelsLoading, error: levelsError } = useLevelsConfig();
   const totalCommissions = commissions.reduce((sum, comm) => sum + comm.amount, 0);
 
   return (
@@ -91,22 +93,31 @@ const DashboardView = ({ partner, commissions, currentView, onViewChange, onLogo
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg">
-                <div className="text-2xl font-bold text-blue-800">1%</div>
-                <div className="text-sm text-blue-700">Уровень 1</div>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-green-100 to-green-200 rounded-lg">
-                <div className="text-2xl font-bold text-green-800">2%</div>
-                <div className="text-sm text-green-700">Уровень 2</div>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg">
-                <div className="text-2xl font-bold text-orange-800">4%</div>
-                <div className="text-sm text-orange-700">Уровень 3</div>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg">
-                <div className="text-2xl font-bold text-purple-800">8%</div>
-                <div className="text-sm text-purple-700">Уровень 4</div>
-              </div>
+              {levelsLoading ? (
+                <div className="col-span-full text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-600">Загрузка уровней...</p>
+                </div>
+              ) : levelsError ? (
+                <div className="col-span-full text-center py-4">
+                  <p className="text-sm text-red-600">Ошибка загрузки уровней: {levelsError}</p>
+                </div>
+              ) : levels.length > 0 ? (
+                levels.map((levelConfig) => (
+                  <div key={levelConfig.level} className={`p-3 bg-gradient-to-br ${levelConfig.color.bg} rounded-lg`}>
+                    <div className={`text-2xl font-bold ${levelConfig.color.text}`}>
+                      {levelConfig.percentage}%
+                    </div>
+                    <div className={`text-sm ${levelConfig.color.text.replace('800', '700')}`}>
+                      Уровень {levelConfig.level}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-4">
+                  <p className="text-sm text-gray-600">Нет данных об уровнях</p>
+                </div>
+              )}
             </div>
             <p className="text-sm text-gray-600 mt-4 text-center">
               Процент с продаж привлеченных партнеров на соответствующем уровне

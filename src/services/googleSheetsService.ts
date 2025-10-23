@@ -35,6 +35,15 @@ interface NetworkData {
   level4: PartnerRecord[];
 }
 
+interface LevelConfig {
+  level: number;
+  percentage: number;
+  color: {
+    bg: string;
+    text: string;
+  };
+}
+
 class GoogleSheetsService {
   private spreadsheetId: string;
   private apiKey: string;
@@ -532,6 +541,85 @@ class GoogleSheetsService {
       
       return { success: false, error: errorMessage };
     }
+  }
+
+  // Функция для загрузки конфигурации уровней из Google Sheets
+  async getLevelsConfig(): Promise<{ success: boolean; levels?: LevelConfig[]; error?: string }> {
+    try {
+      console.log('=== GET LEVELS CONFIG START ===');
+      
+      const url = `${this.baseUrl}/${this.spreadsheetId}/values/Уровни!A2:C5?key=${this.apiKey}`;
+      console.log('Fetching levels config from:', url);
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        console.error('Failed to fetch levels config:', response.status, response.statusText);
+        return { success: false, error: `HTTP error! status: ${response.status}` };
+      }
+      
+      const data = await response.json();
+      console.log('Levels config response:', data);
+      
+      if (!data.values || data.values.length === 0) {
+        console.warn('No levels config data found, using default values');
+        return { success: true, levels: this.getDefaultLevelsConfig() };
+      }
+      
+      const levels: LevelConfig[] = data.values.map((row: any[], index: number) => {
+        const level = index + 1;
+        const percentage = parseFloat(row[1]) || 0;
+        const colorName = (row[2] || 'blue').toLowerCase();
+        
+        const colorMap: { [key: string]: { bg: string; text: string } } = {
+          'blue': { bg: 'from-blue-100 to-blue-200', text: 'text-blue-800' },
+          'green': { bg: 'from-green-100 to-green-200', text: 'text-green-800' },
+          'orange': { bg: 'from-orange-100 to-orange-200', text: 'text-orange-800' },
+          'purple': { bg: 'from-purple-100 to-purple-200', text: 'text-purple-800' },
+          'red': { bg: 'from-red-100 to-red-200', text: 'text-red-800' },
+          'yellow': { bg: 'from-yellow-100 to-yellow-200', text: 'text-yellow-800' }
+        };
+        
+        return {
+          level,
+          percentage,
+          color: colorMap[colorName] || colorMap['blue']
+        };
+      });
+      
+      console.log('Parsed levels config:', levels);
+      return { success: true, levels };
+      
+    } catch (error) {
+      console.error('Error fetching levels config:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  // Функция для получения конфигурации уровней по умолчанию
+  private getDefaultLevelsConfig(): LevelConfig[] {
+    return [
+      {
+        level: 1,
+        percentage: 1,
+        color: { bg: 'from-blue-100 to-blue-200', text: 'text-blue-800' }
+      },
+      {
+        level: 2,
+        percentage: 2,
+        color: { bg: 'from-green-100 to-green-200', text: 'text-green-800' }
+      },
+      {
+        level: 3,
+        percentage: 4,
+        color: { bg: 'from-orange-100 to-orange-200', text: 'text-orange-800' }
+      },
+      {
+        level: 4,
+        percentage: 8,
+        color: { bg: 'from-purple-100 to-purple-200', text: 'text-purple-800' }
+      }
+    ];
   }
 }
 
