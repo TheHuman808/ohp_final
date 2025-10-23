@@ -586,12 +586,15 @@ class GoogleSheetsService {
               
               console.log(`Successfully parsed levels config from ${sheetName}:`, levels);
               return { success: true, levels };
+            } else {
+              console.log(`Sheet ${sheetName} found but no data, trying next...`);
             }
           } else {
             console.log(`Sheet ${sheetName} not found (${response.status}), trying next...`);
           }
         } catch (sheetError) {
           console.log(`Error accessing sheet ${sheetName}:`, sheetError);
+          // Продолжаем к следующему листу
           continue;
         }
       }
