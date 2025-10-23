@@ -128,7 +128,7 @@ const DashboardView = ({ partner, commissions, currentView, onViewChange, onLogo
       
       {/* Кнопка выхода в самом низу страницы */}
       {onLogout && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 md:hidden">
+        <div className="bg-white border-t border-gray-200 p-4 md:hidden">
           <Button
             variant="outline"
             onClick={onLogout}
