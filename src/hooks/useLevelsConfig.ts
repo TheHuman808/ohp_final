@@ -21,6 +21,13 @@ export const useLevelsConfig = () => {
         setLoading(true);
         setError(null);
         
+        // Сначала проверим доступные листы
+        console.log('Checking available sheets...');
+        const sheetsResult = await googleSheetsService.getAvailableSheets();
+        if (sheetsResult.success && sheetsResult.sheets) {
+          console.log('Available sheets:', sheetsResult.sheets);
+        }
+        
         const result = await googleSheetsService.getLevelsConfig();
         
         if (result.success && result.levels) {

@@ -548,50 +548,92 @@ class GoogleSheetsService {
     try {
       console.log('=== GET LEVELS CONFIG START ===');
       
-      const url = `${this.baseUrl}/${this.spreadsheetId}/values/Уровни!A2:C5?key=${this.apiKey}`;
-      console.log('Fetching levels config from:', url);
+      // Список возможных листов для поиска конфигурации уровней
+      const possibleSheets = ['Настройки', 'Settings', 'Config', 'Configuration', 'Уровни', 'Levels'];
+      
+      for (const sheetName of possibleSheets) {
+        try {
+          const url = `${this.baseUrl}/${this.spreadsheetId}/values/${sheetName}!A2:C5?key=${this.apiKey}`;
+          console.log(`Trying to fetch levels config from sheet: ${sheetName}`, url);
+          
+          const response = await fetch(url);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`Levels config response from ${sheetName}:`, data);
+            
+            if (data.values && data.values.length > 0) {
+              const levels: LevelConfig[] = data.values.map((row: any[], index: number) => {
+                const level = index + 1;
+                const percentage = parseFloat(row[1]) || 0;
+                const colorName = (row[2] || 'blue').toLowerCase();
+                
+                const colorMap: { [key: string]: { bg: string; text: string } } = {
+                  'blue': { bg: 'from-blue-100 to-blue-200', text: 'text-blue-800' },
+                  'green': { bg: 'from-green-100 to-green-200', text: 'text-green-800' },
+                  'orange': { bg: 'from-orange-100 to-orange-200', text: 'text-orange-800' },
+                  'purple': { bg: 'from-purple-100 to-purple-200', text: 'text-purple-800' },
+                  'red': { bg: 'from-red-100 to-red-200', text: 'text-red-800' },
+                  'yellow': { bg: 'from-yellow-100 to-yellow-200', text: 'text-yellow-800' }
+                };
+                
+                return {
+                  level,
+                  percentage,
+                  color: colorMap[colorName] || colorMap['blue']
+                };
+              });
+              
+              console.log(`Successfully parsed levels config from ${sheetName}:`, levels);
+              return { success: true, levels };
+            }
+          } else {
+            console.log(`Sheet ${sheetName} not found (${response.status}), trying next...`);
+          }
+        } catch (sheetError) {
+          console.log(`Error accessing sheet ${sheetName}:`, sheetError);
+          continue;
+        }
+      }
+      
+      // Если ни один лист не найден, используем значения по умолчанию
+      console.warn('No levels config data found in any sheet, using default values');
+      return { success: true, levels: this.getDefaultLevelsConfig() };
+      
+    } catch (error) {
+      console.error('Error fetching levels config:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  // Функция для получения списка всех листов в Google Sheets
+  async getAvailableSheets(): Promise<{ success: boolean; sheets?: string[]; error?: string }> {
+    try {
+      console.log('=== GET AVAILABLE SHEETS START ===');
+      
+      const url = `${this.baseUrl}/${this.spreadsheetId}?key=${this.apiKey}`;
+      console.log('Fetching spreadsheet info from:', url);
       
       const response = await fetch(url);
       
       if (!response.ok) {
-        console.error('Failed to fetch levels config:', response.status, response.statusText);
+        console.error('Failed to fetch spreadsheet info:', response.status, response.statusText);
         return { success: false, error: `HTTP error! status: ${response.status}` };
       }
       
       const data = await response.json();
-      console.log('Levels config response:', data);
+      console.log('Spreadsheet info response:', data);
       
-      if (!data.values || data.values.length === 0) {
-        console.warn('No levels config data found, using default values');
-        return { success: true, levels: this.getDefaultLevelsConfig() };
+      if (data.sheets && data.sheets.length > 0) {
+        const sheetNames = data.sheets.map((sheet: any) => sheet.properties.title);
+        console.log('Available sheets:', sheetNames);
+        return { success: true, sheets: sheetNames };
       }
       
-      const levels: LevelConfig[] = data.values.map((row: any[], index: number) => {
-        const level = index + 1;
-        const percentage = parseFloat(row[1]) || 0;
-        const colorName = (row[2] || 'blue').toLowerCase();
-        
-        const colorMap: { [key: string]: { bg: string; text: string } } = {
-          'blue': { bg: 'from-blue-100 to-blue-200', text: 'text-blue-800' },
-          'green': { bg: 'from-green-100 to-green-200', text: 'text-green-800' },
-          'orange': { bg: 'from-orange-100 to-orange-200', text: 'text-orange-800' },
-          'purple': { bg: 'from-purple-100 to-purple-200', text: 'text-purple-800' },
-          'red': { bg: 'from-red-100 to-red-200', text: 'text-red-800' },
-          'yellow': { bg: 'from-yellow-100 to-yellow-200', text: 'text-yellow-800' }
-        };
-        
-        return {
-          level,
-          percentage,
-          color: colorMap[colorName] || colorMap['blue']
-        };
-      });
-      
-      console.log('Parsed levels config:', levels);
-      return { success: true, levels };
+      return { success: false, error: 'No sheets found' };
       
     } catch (error) {
-      console.error('Error fetching levels config:', error);
+      console.error('Error fetching available sheets:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
