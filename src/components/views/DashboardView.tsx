@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
-import { Users, TrendingUp, Share2 } from "lucide-react";
+import { Users, TrendingUp, Share2, LogOut } from "lucide-react";
 import type { PartnerRecord, CommissionRecord } from "@/services/googleSheetsService";
 
 interface DashboardViewProps {
@@ -113,6 +114,20 @@ const DashboardView = ({ partner, commissions, currentView, onViewChange, onLogo
           </CardContent>
         </Card>
       </div>
+      
+      {/* Кнопка выхода в самом низу страницы */}
+      {onLogout && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 md:hidden">
+          <Button
+            variant="outline"
+            onClick={onLogout}
+            className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Выйти
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

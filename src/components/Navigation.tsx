@@ -48,20 +48,6 @@ const Navigation = ({ currentView, onViewChange, onLogout }: NavigationProps) =>
           </Button>
         )}
       </div>
-      
-      {/* Кнопка выхода для мобильных - отдельно внизу */}
-      {onLogout && (
-        <div className="border-t border-gray-200 px-4 py-2 md:hidden">
-          <Button
-            variant="outline"
-            onClick={onLogout}
-            className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Выйти
-          </Button>
-        </div>
-      )}
     </div>
   );
 };

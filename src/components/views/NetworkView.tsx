@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
-import { Phone, Mail, User } from "lucide-react";
+import { Phone, Mail, User, LogOut } from "lucide-react";
 import type { PartnerRecord } from "@/services/googleSheetsService";
 
 interface NetworkViewProps {
@@ -92,6 +93,20 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
           </CardContent>
         </Card>
       </div>
+      
+      {/* Кнопка выхода в самом низу страницы */}
+      {onLogout && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 md:hidden">
+          <Button
+            variant="outline"
+            onClick={onLogout}
+            className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Выйти
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
