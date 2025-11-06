@@ -246,7 +246,7 @@ const StatsView = ({ commissions, commissionsLoading, currentView, onViewChange,
         </Card>
       </div>
       
-      {/* Кнопка выхода в самом низу страницы */}
+      {/* Кнопка выхода в самом низу страницы - только для мобильных, так как в Navigation уже есть кнопка */}
       {onLogout && (
         <div className="bg-white border-t border-gray-200 p-4 md:hidden relative z-10 min-h-[60px]">
           <Button
@@ -254,8 +254,14 @@ const StatsView = ({ commissions, commissionsLoading, currentView, onViewChange,
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Logout button clicked on mobile');
-              onLogout();
+              console.log('Logout button clicked on mobile (bottom)');
+              try {
+                if (onLogout) {
+                  onLogout();
+                }
+              } catch (error) {
+                console.error('Error in logout handler:', error);
+              }
             }}
             className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 relative z-20 min-h-[44px]"
             style={{ touchAction: 'manipulation', pointerEvents: 'auto' }}

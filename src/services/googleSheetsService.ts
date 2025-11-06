@@ -668,6 +668,29 @@ class GoogleSheetsService {
       }
     ];
   }
+
+  // Очистить все данные localStorage
+  clearAllLocalData(): void {
+    console.log('=== CLEARING ALL LOCAL DATA ===');
+    const keysToRemove: string[] = [];
+    
+    // Находим все ключи связанные с партнерами
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('partner_') || key.startsWith('fallback_partner_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    // Удаляем найденные ключи
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      console.log('Removed from localStorage:', key);
+    });
+    
+    console.log(`Cleared ${keysToRemove.length} partner records from localStorage`);
+    console.log('=== LOCAL DATA CLEARED ===');
+  }
 }
 
 export const googleSheetsService = new GoogleSheetsService();

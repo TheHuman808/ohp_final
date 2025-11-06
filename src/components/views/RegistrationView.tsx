@@ -123,53 +123,17 @@ const RegistrationView = ({ telegramUser, onPromoCodeSuccess, onNoPromoCodeRegis
               Добро пожаловать!
             </CardTitle>
             <CardDescription>
-              {displayName}, введите промокод для создания нового аккаунта или войдите в существующий
+              {displayName}, создайте новый аккаунт или войдите в существующий
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Input
-                type="text"
-                placeholder="Промокод партнера"
-                value={inviterCode}
-                onChange={(e) => setInviterCode(e.target.value.toUpperCase())}
-                className="text-center text-lg font-mono"
-                disabled={validating || partnerLoading}
-              />
-            </div>
-            <Button 
-              onClick={handlePromoCodeSubmit}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
-              disabled={partnerLoading || validating}
-            >
-              {validating ? "Проверка промокода..." : partnerLoading ? "Загрузка..." : "Создать новый аккаунт с промокодом"}
-            </Button>
-            
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">или</span>
-              </div>
-            </div>
-            
             <Button 
               onClick={handleNoPromoCodeRegistration}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
               disabled={partnerLoading}
             >
-              {partnerLoading ? "Загрузка..." : "Создать новый аккаунт без промокода"}
+              {partnerLoading ? "Загрузка..." : "Создать новый аккаунт"}
             </Button>
-            
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">или</span>
-              </div>
-            </div>
             
             <Button 
               onClick={handleExistingUserLogin}

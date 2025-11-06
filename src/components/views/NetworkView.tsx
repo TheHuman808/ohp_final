@@ -20,33 +20,45 @@ interface NetworkViewProps {
 
 const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLogout }: NetworkViewProps) => {
   const { levels, loading: levelsLoading, error: levelsError } = useLevelsConfig();
-  const renderPartnerCard = (partner: PartnerRecord) => (
-    <div key={partner.id} className="bg-white p-3 rounded-lg border border-gray-200 space-y-2">
-      <div className="flex items-center gap-2">
-        <User className="w-4 h-4 text-gray-500" />
-        <span className="font-medium">{partner.firstName} {partner.lastName}</span>
-      </div>
-      <div className="text-sm text-gray-600 space-y-1">
-        <div className="flex items-center gap-2">
-          <Phone className="w-3 h-3" />
-          <span>{partner.phone}</span>
+  const renderPartnerCard = (partner: PartnerRecord) => {
+    try {
+      const totalEarnings = partner.totalEarnings || 0;
+      return (
+        <div key={partner.id} className="bg-white p-3 rounded-lg border border-gray-200 space-y-2">
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4 text-gray-500" />
+            <span className="font-medium">{partner.firstName || ''} {partner.lastName || ''}</span>
+          </div>
+          <div className="text-sm text-gray-600 space-y-1">
+            <div className="flex items-center gap-2">
+              <Phone className="w-3 h-3" />
+              <span>{partner.phone || 'не указан'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Mail className="w-3 h-3" />
+              <span>{partner.email || 'не указан'}</span>
+            </div>
+            {partner.username && (
+              <p>@{partner.username}</p>
+            )}
+            <p className="text-xs text-gray-500">
+              Промокод: <code className="bg-gray-100 px-1 rounded">{partner.promoCode || 'не указан'}</code>
+            </p>
+            <p className="text-xs text-gray-500">
+              Доход: ₽{totalEarnings.toLocaleString('ru-RU')}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Mail className="w-3 h-3" />
-          <span>{partner.email}</span>
+      );
+    } catch (error) {
+      console.error('Error rendering partner card:', error, partner);
+      return (
+        <div key={partner.id} className="bg-white p-3 rounded-lg border border-gray-200">
+          <p className="text-red-600 text-sm">Ошибка отображения данных партнера</p>
         </div>
-        {partner.username && (
-          <p>@{partner.username}</p>
-        )}
-        <p className="text-xs text-gray-500">
-          Промокод: <code className="bg-gray-100 px-1 rounded">{partner.promoCode}</code>
-        </p>
-        <p className="text-xs text-gray-500">
-          Доход: ₽{partner.totalEarnings.toLocaleString()}
-        </p>
-      </div>
-    </div>
-  );
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -76,28 +88,38 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
                   </div>
                 ) : levels.length > 0 ? (
                   levels.map((levelConfig) => {
-                    const levelData = network[`level${levelConfig.level}` as keyof typeof network];
-                    return (
-                      <div key={levelConfig.level} className="border rounded-lg p-4 bg-gray-50">
-                        <div className="flex justify-between items-center mb-3">
-                          <h3 className="font-semibold text-lg">
-                            Уровень {levelConfig.level} ({levelConfig.percentage}%)
-                          </h3>
-                          <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                            {levelData.length}
-                          </span>
+                    try {
+                      const levelData = network[`level${levelConfig.level}` as keyof typeof network] || [];
+                      const levelDataArray = Array.isArray(levelData) ? levelData : [];
+                      return (
+                        <div key={levelConfig.level} className="border rounded-lg p-4 bg-gray-50">
+                          <div className="flex justify-between items-center mb-3">
+                            <h3 className="font-semibold text-lg">
+                              Уровень {levelConfig.level} ({levelConfig.percentage}%)
+                            </h3>
+                            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                              {levelDataArray.length}
+                            </span>
+                          </div>
+                        {levelDataArray.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {levelDataArray.map(renderPartnerCard)}
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 text-center py-4">
+                            Пока нет партнеров на этом уровне
+                          </p>
+                        )}
                         </div>
-                      {levelData.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {levelData.map(renderPartnerCard)}
+                      );
+                    } catch (error) {
+                      console.error('Error rendering level:', error, levelConfig);
+                      return (
+                        <div key={levelConfig.level} className="border rounded-lg p-4 bg-gray-50">
+                          <p className="text-red-600">Ошибка отображения уровня {levelConfig.level}</p>
                         </div>
-                      ) : (
-                        <p className="text-gray-500 text-center py-4">
-                          Пока нет партнеров на этом уровне
-                        </p>
-                      )}
-                      </div>
-                    );
+                      );
+                    }
                   })
                 ) : (
                   <div className="text-center py-8">
@@ -110,7 +132,7 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
         </Card>
       </div>
       
-      {/* Кнопка выхода в самом низу страницы */}
+      {/* Кнопка выхода в самом низу страницы - только для мобильных, так как в Navigation уже есть кнопка */}
       {onLogout && (
         <div className="bg-white border-t border-gray-200 p-4 md:hidden relative z-10 min-h-[60px]">
           <Button
@@ -118,8 +140,14 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Logout button clicked on mobile');
-              onLogout();
+              console.log('Logout button clicked on mobile (bottom)');
+              try {
+                if (onLogout) {
+                  onLogout();
+                }
+              } catch (error) {
+                console.error('Error in logout handler:', error);
+              }
             }}
             className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 relative z-20 min-h-[44px]"
             style={{ touchAction: 'manipulation', pointerEvents: 'auto' }}

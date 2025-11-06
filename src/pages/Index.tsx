@@ -139,6 +139,14 @@ const Index = () => {
     };
   }, []);
 
+  // Автоматически устанавливаем view в registration при выходе
+  useEffect(() => {
+    if (loggedOut && currentView !== "registration" && currentView !== "personalData") {
+      console.log('Auto-setting view to registration after logout');
+      setCurrentView("registration");
+    }
+  }, [loggedOut, currentView]);
+
   const { 
     partner, 
     loading: partnerLoading, 
@@ -211,21 +219,46 @@ const Index = () => {
   };
 
   const handleLogout = () => {
-    console.log('Logging out user:', telegramUser?.id);
-    // Очищаем все локальные данные
-    googleSheetsService.clearAllLocalData();
-    // Устанавливаем флаг выхода
-    setLoggedOut(true);
-    // Сбрасываем все состояние
-    setInviterCode("");
-    setIsExistingUserLogin(false);
-    setCurrentView("registration");
-    // Принудительно обновляем хуки для сброса данных партнера
-    setForceRefresh(prev => prev + 1);
-    console.log('Logged out successfully');
+    try {
+      console.log('=== LOGOUT INITIATED ===');
+      console.log('Logging out user:', telegramUser?.id);
+      
+      // Очищаем все локальные данные
+      try {
+        googleSheetsService.clearAllLocalData();
+        console.log('Local data cleared');
+      } catch (clearError) {
+        console.error('Error clearing local data:', clearError);
+        // Продолжаем выполнение даже если очистка не удалась
+      }
+      
+      // Сбрасываем все состояние ПЕРЕД установкой флага выхода
+      setInviterCode("");
+      setIsExistingUserLogin(false);
+      setCurrentView("registration");
+      
+      // Устанавливаем флаг выхода - это должно быть последним
+      setLoggedOut(true);
+      
+      // Принудительно обновляем хуки для сброса данных партнера
+      // Передаем пустую строку, чтобы хуки не загружали данные
+      setForceRefresh(prev => prev + 1);
+      
+      console.log('=== LOGOUT COMPLETED SUCCESSFULLY ===');
+      console.log('Redirecting to registration screen...');
+    } catch (error) {
+      console.error('=== LOGOUT ERROR ===');
+      console.error('Error during logout:', error);
+      // Даже при ошибке пытаемся сбросить состояние
+      setInviterCode("");
+      setIsExistingUserLogin(false);
+      setCurrentView("registration");
+      setLoggedOut(true);
+      setForceRefresh(prev => prev + 1);
+    }
   };
 
-  const handlePersonalDataComplete = async (personalData: { firstName: string; lastName: string; phone: string; email: string }) => {
+  const handlePersonalDataComplete = async (personalData: { firstName: string; lastName: string; phone: string; email: string; inviterCode?: string }) => {
     if (!telegramUser) {
       console.error('No telegram user data');
       return;
@@ -233,13 +266,13 @@ const Index = () => {
     
     console.log('=== STARTING NEW USER REGISTRATION PROCESS ===');
     console.log('Personal data:', personalData);
-    console.log('Inviter code:', inviterCode || 'NO PROMO CODE');
+    console.log('Inviter code:', personalData.inviterCode || 'NO PROMO CODE');
     console.log('Telegram user:', telegramUser);
     
     try {
       // Если есть промокод, используем его, иначе регистрируем без промокода
       const result = await registerPartner(
-        inviterCode || "", // Пустая строка если нет промокода
+        personalData.inviterCode || "", // Пустая строка если нет промокода
         personalData,
         telegramUser.username
       );
@@ -271,8 +304,13 @@ const Index = () => {
     }
   };
 
-  // Если пользователь вышел из системы, показываем только регистрацию
+  // Если пользователь вышел из системы, ВСЕГДА показываем только регистрацию
+  // Это должно быть первым условием, чтобы переопределить все остальные проверки
   if (loggedOut) {
+    console.log('User is logged out, showing registration screen');
+    console.log('Current view:', currentView);
+    
+    // Если мы не на экране регистрации или персональных данных, показываем регистрацию
     if (currentView === "personalData") {
       return (
         <PersonalDataView
@@ -284,6 +322,7 @@ const Index = () => {
       );
     }
 
+    // ВСЕГДА показываем экран регистрации при выходе
     return (
       <RegistrationView
         telegramUser={telegramUser}
@@ -321,8 +360,8 @@ const Index = () => {
     );
   }
 
-  // Если партнер найден
-  if (partner) {
+  // Если партнер найден И пользователь НЕ вышел из системы
+  if (partner && !loggedOut) {
     if (currentView === "stats") {
       return (
         <StatsView

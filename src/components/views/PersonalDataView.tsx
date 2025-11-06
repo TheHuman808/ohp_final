@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 interface PersonalDataViewProps {
-  onComplete: (data: { firstName: string; lastName: string; phone: string; email: string }) => void;
+  onComplete: (data: { firstName: string; lastName: string; phone: string; email: string; inviterCode?: string }) => void;
   onBack?: () => void; // Добавляем опциональный проп для кнопки "Назад"
   loading: boolean;
   telegramUser?: { first_name: string; username?: string } | null; // Добавляем данные Telegram пользователя
@@ -18,6 +18,7 @@ const PersonalDataView = ({ onComplete, onBack, loading, telegramUser }: Persona
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("+7");
   const [email, setEmail] = useState("");
+  const [inviterCode, setInviterCode] = useState("");
   const { toast } = useToast();
 
   const formatPhoneNumber = (value: string) => {
@@ -85,7 +86,8 @@ const PersonalDataView = ({ onComplete, onBack, loading, telegramUser }: Persona
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       phone: phone.trim(),
-      email: email.trim()
+      email: email.trim(),
+      inviterCode: inviterCode.trim()
     });
   };
 
@@ -145,6 +147,20 @@ const PersonalDataView = ({ onComplete, onBack, loading, telegramUser }: Persona
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
               />
+            </div>
+            <div>
+              <Label htmlFor="inviterCode">Промокод партнера</Label>
+              <Input
+                id="inviterCode"
+                type="text"
+                placeholder="Введите промокод партнера"
+                value={inviterCode}
+                onChange={(e) => setInviterCode(e.target.value.toUpperCase())}
+                disabled={loading}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Укажите промокод партнера который вас пригласил в партнерскую программу
+              </p>
             </div>
             <Button 
               onClick={handleSubmit}
