@@ -24,29 +24,33 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
     try {
       const totalEarnings = partner.totalEarnings || 0;
       return (
-        <div key={partner.id} className="bg-white p-3 rounded-lg border border-gray-200 space-y-2">
+        <div key={partner.id} className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
           <div className="flex items-center gap-2">
-            <User className="w-4 h-4 text-gray-500" />
-            <span className="font-medium">{partner.firstName || ''} {partner.lastName || ''}</span>
+            <User className="w-5 h-5 text-gray-500" />
+            <span className="font-semibold text-base">{partner.firstName || ''} {partner.lastName || ''}</span>
           </div>
-          <div className="text-sm text-gray-600 space-y-1">
-            <div className="flex items-center gap-2">
-              <Phone className="w-3 h-3" />
-              <span>{partner.phone || 'не указан'}</span>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm">
+              <Phone className="w-4 h-4 text-blue-600" />
+              <span className="font-medium text-gray-800">{partner.phone || 'не указан'}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Mail className="w-3 h-3" />
-              <span>{partner.email || 'не указан'}</span>
+            <div className="flex items-center gap-2 text-sm">
+              <Mail className="w-4 h-4 text-blue-600" />
+              <span className="font-medium text-gray-800 break-all">{partner.email || 'не указан'}</span>
             </div>
             {partner.username && (
-              <p>@{partner.username}</p>
+              <div className="text-sm text-gray-600">
+                <span className="font-medium">Username:</span> @{partner.username}
+              </div>
             )}
-            <p className="text-xs text-gray-500">
-              Промокод: <code className="bg-gray-100 px-1 rounded">{partner.promoCode || 'не указан'}</code>
-            </p>
-            <p className="text-xs text-gray-500">
-              Доход: ₽{totalEarnings.toLocaleString('ru-RU')}
-            </p>
+            <div className="pt-2 border-t border-gray-200 space-y-1">
+              <p className="text-xs text-gray-500">
+                <span className="font-medium">Промокод:</span> <code className="bg-gray-100 px-2 py-1 rounded text-xs">{partner.promoCode || 'не указан'}</code>
+              </p>
+              <p className="text-xs text-gray-500">
+                <span className="font-medium">Доход:</span> <span className="text-green-600 font-semibold">₽{totalEarnings.toLocaleString('ru-RU')}</span>
+              </p>
+            </div>
           </div>
         </div>
       );
