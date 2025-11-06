@@ -36,7 +36,7 @@ const Navigation = ({ currentView, onViewChange, onLogout }: NavigationProps) =>
           <Users className="w-4 h-4 mr-1" />
           Сеть
         </Button>
-        {/* Кнопка выхода - видна на всех устройствах */}
+        {/* Кнопка выхода для десктопа - скрыта на мобильных (кнопка внизу страницы) */}
         {onLogout && (
           <Button
             variant="outline"
@@ -52,12 +52,11 @@ const Navigation = ({ currentView, onViewChange, onLogout }: NavigationProps) =>
                 console.error('Error in logout handler:', error);
               }
             }}
-            className="flex flex-1 mx-1 text-red-600 hover:text-red-700 hover:bg-red-50 min-h-[44px]"
+            className="hidden md:flex flex-1 mx-1 text-red-600 hover:text-red-700 hover:bg-red-50 min-h-[44px]"
             style={{ touchAction: 'manipulation', pointerEvents: 'auto', zIndex: 1000 }}
           >
             <LogOut className="w-4 h-4 mr-1" />
-            <span className="hidden sm:inline">Выйти</span>
-            <span className="sm:hidden">Выход</span>
+            Выйти
           </Button>
         )}
       </div>
