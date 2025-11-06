@@ -231,32 +231,60 @@ class GoogleSheetsService {
           telegramId: row[1],
           firstName: row[2],
           lastName: row[3],
+          phone: row[4] || '',
+          email: row[5] || '',
+          username: row[6] || undefined,
           promoCode: row[7],
-          registrationDate: row[10]
+          inviterCode: row[8] || undefined,
+          inviterTelegramId: row[9] || undefined,
+          registrationDate: row[10] || '',
+          totalEarnings: parseFloat(row[11]) || 0,
+          salesCount: parseInt(row[12]) || 0
         })),
         level2: level2.map(row => ({
           id: row[0],
           telegramId: row[1],
           firstName: row[2],
           lastName: row[3],
+          phone: row[4] || '',
+          email: row[5] || '',
+          username: row[6] || undefined,
           promoCode: row[7],
-          registrationDate: row[10]
+          inviterCode: row[8] || undefined,
+          inviterTelegramId: row[9] || undefined,
+          registrationDate: row[10] || '',
+          totalEarnings: parseFloat(row[11]) || 0,
+          salesCount: parseInt(row[12]) || 0
         })),
         level3: level3.map(row => ({
           id: row[0],
           telegramId: row[1],
           firstName: row[2],
           lastName: row[3],
+          phone: row[4] || '',
+          email: row[5] || '',
+          username: row[6] || undefined,
           promoCode: row[7],
-          registrationDate: row[10]
+          inviterCode: row[8] || undefined,
+          inviterTelegramId: row[9] || undefined,
+          registrationDate: row[10] || '',
+          totalEarnings: parseFloat(row[11]) || 0,
+          salesCount: parseInt(row[12]) || 0
         })),
         level4: level4.map(row => ({
           id: row[0],
           telegramId: row[1],
           firstName: row[2],
           lastName: row[3],
+          phone: row[4] || '',
+          email: row[5] || '',
+          username: row[6] || undefined,
           promoCode: row[7],
-          registrationDate: row[10]
+          inviterCode: row[8] || undefined,
+          inviterTelegramId: row[9] || undefined,
+          registrationDate: row[10] || '',
+          totalEarnings: parseFloat(row[11]) || 0,
+          salesCount: parseInt(row[12]) || 0
         }))
       };
       
