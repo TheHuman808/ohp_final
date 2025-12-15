@@ -460,11 +460,16 @@ function calculateCommissions() {
       return; // Пропускаем некорректные продажи
     }
 
-    // --- 4.1 ПОИСК ПАРТНЕРА ПО ПРОМОКОДУ И ПОЛУЧЕНИЕ TELEGRAM ID ПРИГЛАСИВШЕГО ---
+    // --- 4.1 ПОИСК ПАРТНЕРА ПО ПРОМОКОДУ И/ИЛИ ПО ТЕЛЕФОНУ И ПОЛУЧЕНИЕ TELEGRAM ID ПРИГЛАСИВШЕГО ---
     let sourcePartner = null;
     let inviterTgId = null;
     
-    // Ищем партнера по промокоду из продажи
+    console.log(`Sale ${saleId}: Searching for partner...`);
+    console.log(`  Promo code: ${salePromo}`);
+    console.log(`  Customer info: ${customerInfo}`);
+    console.log(`  Normalized phone: ${normalizedCustomerPhone}`);
+    
+    // Сначала ищем партнера по промокоду из продажи
     if (salePromo) {
       const normalizedPromo = salePromo.toUpperCase().trim();
       sourcePartner = partnersByPromo[normalizedPromo] || partnersByPromo[salePromo];
@@ -472,16 +477,37 @@ function calculateCommissions() {
       if (sourcePartner) {
         // Получаем Telegram ID пригласившего партнера (того, кто пригласил sourcePartner)
         inviterTgId = sourcePartner.inviterTgId;
-        console.log(`Sale ${saleId}: Found source partner ${sourcePartner.tgId} (promo: ${sourcePartner.promo}), inviter: ${inviterTgId}`);
+        console.log(`Sale ${saleId}: Found source partner ${sourcePartner.tgId} by promo code (promo: ${sourcePartner.promo}), inviter: ${inviterTgId}`);
+      } else {
+        console.log(`Sale ${saleId}: Partner not found by promo code: ${normalizedPromo}`);
       }
     }
     
     // Если по промокоду не нашли, ищем по телефону из информации о клиенте
     if (!sourcePartner && normalizedCustomerPhone && normalizedCustomerPhone.length >= 7) {
-      sourcePartner = partnersByPhone[normalizedCustomerPhone];
-      if (sourcePartner) {
-        inviterTgId = sourcePartner.inviterTgId;
-        console.log(`Sale ${saleId}: Found source partner ${sourcePartner.tgId} by phone, inviter: ${inviterTgId}`);
+      console.log(`Sale ${saleId}: Trying to find partner by phone: ${normalizedCustomerPhone}`);
+      console.log(`Sale ${saleId}: Available phone keys count:`, Object.keys(partnersByPhone).length);
+      
+      // Пробуем разные варианты нормализации телефона
+      const phoneVariants = [
+        normalizedCustomerPhone,
+        normalizedCustomerPhone.slice(-9), // Последние 9 цифр
+        normalizedCustomerPhone.slice(-10), // Последние 10 цифр
+        '7' + normalizedCustomerPhone.slice(-10), // С префиксом 7
+        '8' + normalizedCustomerPhone.slice(-10) // С префиксом 8
+      ];
+      
+      for (const phoneVariant of phoneVariants) {
+        if (partnersByPhone[phoneVariant]) {
+          sourcePartner = partnersByPhone[phoneVariant];
+          inviterTgId = sourcePartner.inviterTgId;
+          console.log(`Sale ${saleId}: Found source partner ${sourcePartner.tgId} by phone variant ${phoneVariant}, inviter: ${inviterTgId}`);
+          break;
+        }
+      }
+      
+      if (!sourcePartner) {
+        console.log(`Sale ${saleId}: Partner not found by phone after trying ${phoneVariants.length} variants`);
       }
     }
 
