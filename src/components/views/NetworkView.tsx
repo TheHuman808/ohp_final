@@ -129,10 +129,15 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
                   levels.map((levelConfig) => {
                     try {
                       const levelKey = `level${levelConfig.level}` as keyof typeof network;
-                      const levelData = network[levelKey] || [];
+                      const levelData = network?.[levelKey] || [];
                       const levelDataArray = Array.isArray(levelData) ? levelData : [];
                       
-                      console.log(`Level ${levelConfig.level} data:`, levelDataArray);
+                      console.log(`=== RENDERING LEVEL ${levelConfig.level} ===`);
+                      console.log(`Level key: ${levelKey}`);
+                      console.log(`Level data:`, levelData);
+                      console.log(`Level data array:`, levelDataArray);
+                      console.log(`Level data array length:`, levelDataArray.length);
+                      console.log(`First partner in level:`, levelDataArray[0]);
                       
                       return (
                         <div key={levelConfig.level} className="border rounded-lg p-4 bg-gray-50">
