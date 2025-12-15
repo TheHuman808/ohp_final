@@ -976,75 +976,201 @@ function getPartnerNetwork(telegramId) {
     
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     const partnersSheet = spreadsheet.getSheetByName('Партнеры');
+    const salesSheet = spreadsheet.getSheetByName('Продажи');
+    const accrualsSheet = spreadsheet.getSheetByName('Начисления');
     
     if (!partnersSheet) {
       console.error('Лист "Партнеры" не найден');
       return { success: false, error: 'Лист "Партнеры" не найден' };
     }
     
-    const lastRow = partnersSheet.getLastRow();
-    console.log('Last row in Partners sheet:', lastRow);
+    if (!salesSheet) {
+      console.error('Лист "Продажи" не найден');
+      return { success: false, error: 'Лист "Продажи" не найден' };
+    }
     
-    if (lastRow <= 1) {
-      console.log('No data rows found, returning empty network');
+    if (!accrualsSheet) {
+      console.error('Лист "Начисления" не найден');
+      return { success: false, error: 'Лист "Начисления" не найден' };
+    }
+    
+    // --- ШАГ 1: НАЙТИ ПРОМОКОД ТЕКУЩЕГО ПАРТНЕРА ---
+    const partnersLastRow = partnersSheet.getLastRow();
+    if (partnersLastRow <= 1) {
+      console.log('No data rows found in Partners sheet, returning empty network');
       return { success: true, network: { level1: [], level2: [], level3: [], level4: [] } };
     }
     
-    const partnersData = partnersSheet.getRange(2, 1, lastRow - 1, 13).getValues();
+    const partnersData = partnersSheet.getRange(2, 1, partnersLastRow - 1, 13).getValues();
     console.log('Total partners data rows:', partnersData.length);
     
-    // Находим партнеров по уровням
-    // Колонка J (индекс 9) - Telegram ID пригласившего
     const searchTgId = String(telegramId || '').trim();
     console.log('Search Telegram ID (normalized):', searchTgId);
     
-    // Отладочная информация - показываем первые несколько строк
-    if (partnersData.length > 0) {
-      console.log('First partner row sample:', partnersData[0]);
-      console.log('First partner Telegram ID (col 1):', String(partnersData[0][1] || '').trim());
-      console.log('First partner Inviter Telegram ID (col 9):', String(partnersData[0][9] || '').trim());
+    // Находим текущего партнера по Telegram ID
+    // Структура листа Партнеры: A=ID, B=Telegram ID, C=Имя, D=Фамилия, E=Телефон, F=Email, G=Username, H=Промокод, I=Код пригласившего, J=Telegram ID пригласившего, K=Дата регистрации, L=Общий доход, M=Количество продаж
+    const currentPartner = partnersData.find(row => String(row[1] || '').trim() === searchTgId);
+    
+    if (!currentPartner) {
+      console.log('Current partner not found by Telegram ID:', searchTgId);
+      return { success: true, network: { level1: [], level2: [], level3: [], level4: [] } };
     }
     
-    const level1 = partnersData.filter(row => {
-      const inviterTgId = String(row[9] || '').trim();
-      const matches = inviterTgId === searchTgId;
-      if (matches) {
-        console.log('Found level 1 partner:', String(row[1] || '').trim(), 'inviter:', inviterTgId);
+    const currentPromoCode = String(currentPartner[7] || '').trim().toUpperCase();
+    console.log('Current partner promo code:', currentPromoCode);
+    
+    if (!currentPromoCode) {
+      console.log('Current partner has no promo code');
+      return { success: true, network: { level1: [], level2: [], level3: [], level4: [] } };
+    }
+    
+    // --- ШАГ 2: НАЙТИ ВСЕ ПРОДАЖИ С ПРОМОКОДОМ ТЕКУЩЕГО ПАРТНЕРА ---
+    const salesLastRow = salesSheet.getLastRow();
+    if (salesLastRow <= 1) {
+      console.log('No sales data found, returning empty network');
+      return { success: true, network: { level1: [], level2: [], level3: [], level4: [] } };
+    }
+    
+    // Структура листа Продажи: A=ID, B=Количество, C=Сумма, D=Промокод, E=Информация о клиенте, F=Статус, G=Дата продажи
+    const salesData = salesSheet.getRange(2, 1, salesLastRow - 1, 7).getValues();
+    
+    // Находим продажи с промокодом текущего партнера
+    const salesWithPromo = salesData.filter(sale => {
+      const salePromo = String(sale[3] || '').trim().toUpperCase();
+      return salePromo === currentPromoCode;
+    });
+    
+    console.log(`Found ${salesWithPromo.length} sales with promo code ${currentPromoCode}`);
+    
+    if (salesWithPromo.length === 0) {
+      console.log('No sales found with current partner promo code');
+      return { success: true, network: { level1: [], level2: [], level3: [], level4: [] } };
+    }
+    
+    // Извлекаем ID продаж и телефоны клиентов
+    const saleIds = new Set();
+    const customerPhones = new Set();
+    
+    salesWithPromo.forEach(sale => {
+      const saleId = String(sale[0] || '').trim();
+      const customerInfo = String(sale[4] || '').trim(); // Колонка E - Информация о клиенте
+      
+      if (saleId) {
+        saleIds.add(saleId);
       }
-      return matches;
+      
+      // Извлекаем телефон из информации о клиенте
+      if (customerInfo) {
+        const cleanPhone = customerInfo.replace(/\D/g, ''); // Убираем все нецифровые символы
+        if (cleanPhone.length >= 7) {
+          const normalizedPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
+          customerPhones.add(normalizedPhone);
+          // Также добавляем варианты с префиксами
+          if (normalizedPhone.length === 10) {
+            customerPhones.add('7' + normalizedPhone);
+            customerPhones.add('8' + normalizedPhone);
+          }
+        }
+      }
     });
     
-    console.log('Level 1 partners found:', level1.length);
+    console.log(`Extracted ${saleIds.size} unique sale IDs`);
+    console.log(`Extracted ${customerPhones.size} unique customer phones`);
     
-    const level2 = [];
-    const level3 = [];
-    const level4 = [];
+    // --- ШАГ 3: НАЙТИ ВСЕ НАЧИСЛЕНИЯ ПО ЭТИМ ПРОДАЖАМ ---
+    const accrualsLastRow = accrualsSheet.getLastRow();
+    if (accrualsLastRow <= 1) {
+      console.log('No accruals data found, returning empty network');
+      return { success: true, network: { level1: [], level2: [], level3: [], level4: [] } };
+    }
     
-    // Уровень 2
-    level1.forEach(partner => {
-      const partnerTgId = String(partner[1] || '').trim();
-      const level2Partners = partnersData.filter(row => String(row[9] || '').trim() === partnerTgId);
-      level2.push(...level2Partners);
+    // Структура листа Начисления: A=ID, B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных
+    const accrualsData = accrualsSheet.getRange(2, 1, accrualsLastRow - 1, 10).getValues();
+    
+    // Группируем начисления по уровням
+    const accrualsByLevel = {
+      1: [],
+      2: [],
+      3: [],
+      4: []
+    };
+    
+    accrualsData.forEach(accrual => {
+      const saleId = String(accrual[1] || '').trim(); // Колонка B - ID продажи
+      const level = parseInt(accrual[3]) || 0; // Колонка D - Уровень
+      
+      if (saleIds.has(saleId) && level >= 1 && level <= 4) {
+        accrualsByLevel[level].push(accrual);
+      }
     });
-    console.log('Level 2 partners found:', level2.length);
     
-    // Уровень 3
-    level2.forEach(partner => {
-      const partnerTgId = String(partner[1] || '').trim();
-      const level3Partners = partnersData.filter(row => String(row[9] || '').trim() === partnerTgId);
-      level3.push(...level3Partners);
+    console.log(`Accruals by level:`, {
+      level1: accrualsByLevel[1].length,
+      level2: accrualsByLevel[2].length,
+      level3: accrualsByLevel[3].length,
+      level4: accrualsByLevel[4].length
     });
-    console.log('Level 3 partners found:', level3.length);
     
-    // Уровень 4
-    level3.forEach(partner => {
-      const partnerTgId = String(partner[1] || '').trim();
-      const level4Partners = partnersData.filter(row => String(row[9] || '').trim() === partnerTgId);
-      level4.push(...level4Partners);
+    // --- ШАГ 4: НАЙТИ ПАРТНЕРОВ ПО ТЕЛЕФОНАМ ИЗ ПРОДАЖ ---
+    // Создаем индекс партнеров по телефону
+    const partnersByPhone = {};
+    partnersData.forEach(row => {
+      const phone = String(row[4] || '').trim(); // Колонка E - Телефон
+      if (phone && phone.length >= 7) {
+        const cleanPhone = phone.replace(/\D/g, '');
+        const normalizedPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
+        partnersByPhone[normalizedPhone] = row;
+        // Также добавляем варианты с префиксами
+        if (normalizedPhone.length === 10) {
+          partnersByPhone['7' + normalizedPhone] = row;
+          partnersByPhone['8' + normalizedPhone] = row;
+        }
+      }
     });
-    console.log('Level 4 partners found:', level4.length);
     
-    // Маппим все поля партнера для полной информации
+    console.log(`Indexed ${Object.keys(partnersByPhone).length} partners by phone`);
+    
+    // Находим партнеров по телефонам из продаж
+    const foundPartnersByPhone = new Set();
+    customerPhones.forEach(phone => {
+      if (partnersByPhone[phone]) {
+        const partnerTgId = String(partnersByPhone[phone][1] || '').trim();
+        if (partnerTgId) {
+          foundPartnersByPhone.add(partnerTgId);
+        }
+      }
+    });
+    
+    console.log(`Found ${foundPartnersByPhone.size} partners by phone matching`);
+    
+    // --- ШАГ 5: ГРУППИРОВКА ПАРТНЕРОВ ПО УРОВНЯМ ---
+    const level1Partners = new Set();
+    const level2Partners = new Set();
+    const level3Partners = new Set();
+    const level4Partners = new Set();
+    
+    // Для каждого уровня начислений находим партнеров
+    [1, 2, 3, 4].forEach(level => {
+      accrualsByLevel[level].forEach(accrual => {
+        const partnerTgId = String(accrual[2] || '').trim(); // Колонка C - Telegram ID партнера
+        
+        if (partnerTgId && foundPartnersByPhone.has(partnerTgId)) {
+          if (level === 1) level1Partners.add(partnerTgId);
+          else if (level === 2) level2Partners.add(partnerTgId);
+          else if (level === 3) level3Partners.add(partnerTgId);
+          else if (level === 4) level4Partners.add(partnerTgId);
+        }
+      });
+    });
+    
+    console.log('Partners by level:', {
+      level1: level1Partners.size,
+      level2: level2Partners.size,
+      level3: level3Partners.size,
+      level4: level4Partners.size
+    });
+    
+    // --- ШАГ 6: МАППИНГ ПАРТНЕРОВ ---
     const mapPartner = (row) => ({
       id: String(row[0] || ''),
       telegramId: String(row[1] || '').trim(),
@@ -1061,11 +1187,28 @@ function getPartnerNetwork(telegramId) {
       salesCount: parseInt(row[12]) || 0
     });
     
+    // Получаем данные партнеров по Telegram ID
+    const getPartnerByTgId = (tgId) => {
+      return partnersData.find(row => String(row[1] || '').trim() === tgId);
+    };
+    
     const network = {
-      level1: level1.map(mapPartner),
-      level2: level2.map(mapPartner),
-      level3: level3.map(mapPartner),
-      level4: level4.map(mapPartner)
+      level1: Array.from(level1Partners).map(tgId => {
+        const partner = getPartnerByTgId(tgId);
+        return partner ? mapPartner(partner) : null;
+      }).filter(p => p !== null),
+      level2: Array.from(level2Partners).map(tgId => {
+        const partner = getPartnerByTgId(tgId);
+        return partner ? mapPartner(partner) : null;
+      }).filter(p => p !== null),
+      level3: Array.from(level3Partners).map(tgId => {
+        const partner = getPartnerByTgId(tgId);
+        return partner ? mapPartner(partner) : null;
+      }).filter(p => p !== null),
+      level4: Array.from(level4Partners).map(tgId => {
+        const partner = getPartnerByTgId(tgId);
+        return partner ? mapPartner(partner) : null;
+      }).filter(p => p !== null)
     };
     
     console.log('Network structure created:');
