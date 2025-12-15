@@ -807,9 +807,9 @@ function getPartnerCommissions(telegramId) {
     }
     
     // Структура листа Начисления: 
-    // A=ID, B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток
-    // Читаем минимум 7 колонок (A-G), но можем прочитать больше для будущего использования
-    const commissionsData = commissionsSheet.getRange(2, 1, lastRow - 1, 9).getValues();
+    // A=ID, B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных
+    // Читаем все 10 колонок (A-J)
+    const commissionsData = commissionsSheet.getRange(2, 1, lastRow - 1, 10).getValues();
     console.log(`Read ${commissionsData.length} rows from Начисления sheet`);
     
     // Нормализуем Telegram ID для поиска
