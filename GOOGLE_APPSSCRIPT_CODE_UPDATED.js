@@ -823,16 +823,44 @@ function getPartnerCommissions(telegramId) {
     if (salesSheet) {
       const salesLastRow = salesSheet.getLastRow();
       if (salesLastRow > 1) {
-        // Структура листа Продажи: A=ID, B=Количество, C=Дата, D=Сумма, E=Промокод, F=Информация о клиенте, G=Статус
+        // Правильная структура листа Продажи: A=ID, B=Количество, C=Сумма, D=Промокод, E=Информация о клиенте, F=Статус, G=Дата продажи
         const salesData = salesSheet.getRange(2, 1, salesLastRow - 1, 7).getValues();
         salesData.forEach(saleRow => {
           const saleId = String(saleRow[0] || '').trim();
-          const saleDate = saleRow[2]; // Колонка C - Дата
+          const saleDate = saleRow[6]; // Колонка G (индекс 6) - Дата продажи
+          
           if (saleId) {
-            salesDatesMap[saleId] = saleDate ? (saleDate instanceof Date ? Utilities.formatDate(saleDate, Session.getScriptTimeZone(), 'dd.MM.yyyy') : String(saleDate)) : '';
+            let formattedDate = '';
+            if (saleDate) {
+              if (saleDate instanceof Date) {
+                // Форматируем дату в формат дд.мм.гг (например, 14.12.25)
+                const day = String(saleDate.getDate()).padStart(2, '0');
+                const month = String(saleDate.getMonth() + 1).padStart(2, '0');
+                const year = String(saleDate.getFullYear()).slice(-2); // Последние 2 цифры года
+                formattedDate = `${day}.${month}.${year}`;
+              } else {
+                // Если это строка, пытаемся распарсить
+                const dateStr = String(saleDate);
+                try {
+                  const parsedDate = new Date(dateStr);
+                  if (!isNaN(parsedDate.getTime())) {
+                    const day = String(parsedDate.getDate()).padStart(2, '0');
+                    const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                    const year = String(parsedDate.getFullYear()).slice(-2);
+                    formattedDate = `${day}.${month}.${year}`;
+                  } else {
+                    formattedDate = dateStr; // Оставляем как есть, если не удалось распарсить
+                  }
+                } catch (e) {
+                  formattedDate = dateStr;
+                }
+              }
+            }
+            salesDatesMap[saleId] = formattedDate;
           }
         });
         console.log(`Loaded ${Object.keys(salesDatesMap).length} sale dates from Продажи sheet`);
+        console.log('Sample sale dates:', Object.entries(salesDatesMap).slice(0, 3));
       }
     } else {
       console.warn('Лист "Продажи" не найден, даты продаж не будут добавлены');

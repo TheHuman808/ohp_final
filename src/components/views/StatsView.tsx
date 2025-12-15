@@ -106,10 +106,33 @@ const StatsView = ({ commissions, commissionsLoading, commissionsError, currentV
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Не указана';
     
-    const date = parseDate(dateString);
-    if (!date) return dateString; // Возвращаем исходную строку, если не удалось распарсить
+    // Если дата уже в формате дд.мм.гг (например, из Apps Script), возвращаем как есть
+    if (/^\d{2}\.\d{2}\.\d{2}$/.test(dateString.trim())) {
+      return dateString.trim();
+    }
     
-    return date.toLocaleDateString('ru-RU');
+    const date = parseDate(dateString);
+    if (!date) {
+      // Пытаемся распарсить другие форматы
+      try {
+        const parsed = new Date(dateString);
+        if (!isNaN(parsed.getTime())) {
+          const day = String(parsed.getDate()).padStart(2, '0');
+          const month = String(parsed.getMonth() + 1).padStart(2, '0');
+          const year = String(parsed.getFullYear()).slice(-2);
+          return `${day}.${month}.${year}`;
+        }
+      } catch (e) {
+        // Игнорируем ошибки парсинга
+      }
+      return dateString; // Возвращаем исходную строку, если не удалось распарсить
+    }
+    
+    // Форматируем в дд.мм.гг
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}.${month}.${year}`;
   };
 
   const commissionsByLevel = getCommissionsByLevel();
