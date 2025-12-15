@@ -20,6 +20,19 @@ interface NetworkViewProps {
 
 const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLogout }: NetworkViewProps) => {
   const { levels, loading: levelsLoading, error: levelsError } = useLevelsConfig();
+  
+  // Отладочная информация
+  console.log('=== NETWORK VIEW DEBUG ===');
+  console.log('NetworkView - network data:', network);
+  console.log('NetworkView - networkLoading:', networkLoading);
+  console.log('NetworkView - levels:', levels);
+  console.log('NetworkView - level1 count:', network?.level1?.length || 0);
+  console.log('NetworkView - level2 count:', network?.level2?.length || 0);
+  console.log('NetworkView - level3 count:', network?.level3?.length || 0);
+  console.log('NetworkView - level4 count:', network?.level4?.length || 0);
+  console.log('NetworkView - level1 data:', network?.level1);
+  console.log('NetworkView - level2 data:', network?.level2);
+  
   const renderPartnerCard = (partner: PartnerRecord) => {
     try {
       const totalEarnings = partner.totalEarnings || 0;

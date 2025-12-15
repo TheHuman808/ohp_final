@@ -724,26 +724,52 @@ function getPartnerCommissions(telegramId) {
 
 function getPartnerNetwork(telegramId) {
   try {
+    console.log('=== GET PARTNER NETWORK START ===');
     console.log('Getting network for Telegram ID:', telegramId);
+    console.log('Telegram ID type:', typeof telegramId);
+    console.log('Telegram ID value:', telegramId);
     
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     const partnersSheet = spreadsheet.getSheetByName('Партнеры');
     
     if (!partnersSheet) {
+      console.error('Лист "Партнеры" не найден');
       return { success: false, error: 'Лист "Партнеры" не найден' };
     }
     
     const lastRow = partnersSheet.getLastRow();
+    console.log('Last row in Partners sheet:', lastRow);
+    
     if (lastRow <= 1) {
+      console.log('No data rows found, returning empty network');
       return { success: true, network: { level1: [], level2: [], level3: [], level4: [] } };
     }
     
     const partnersData = partnersSheet.getRange(2, 1, lastRow - 1, 13).getValues();
+    console.log('Total partners data rows:', partnersData.length);
     
     // Находим партнеров по уровням
     // Колонка J (индекс 9) - Telegram ID пригласившего
     const searchTgId = String(telegramId || '').trim();
-    const level1 = partnersData.filter(row => String(row[9] || '').trim() === searchTgId);
+    console.log('Search Telegram ID (normalized):', searchTgId);
+    
+    // Отладочная информация - показываем первые несколько строк
+    if (partnersData.length > 0) {
+      console.log('First partner row sample:', partnersData[0]);
+      console.log('First partner Telegram ID (col 1):', String(partnersData[0][1] || '').trim());
+      console.log('First partner Inviter Telegram ID (col 9):', String(partnersData[0][9] || '').trim());
+    }
+    
+    const level1 = partnersData.filter(row => {
+      const inviterTgId = String(row[9] || '').trim();
+      const matches = inviterTgId === searchTgId;
+      if (matches) {
+        console.log('Found level 1 partner:', String(row[1] || '').trim(), 'inviter:', inviterTgId);
+      }
+      return matches;
+    });
+    
+    console.log('Level 1 partners found:', level1.length);
     
     const level2 = [];
     const level3 = [];
@@ -755,6 +781,7 @@ function getPartnerNetwork(telegramId) {
       const level2Partners = partnersData.filter(row => String(row[9] || '').trim() === partnerTgId);
       level2.push(...level2Partners);
     });
+    console.log('Level 2 partners found:', level2.length);
     
     // Уровень 3
     level2.forEach(partner => {
@@ -762,6 +789,7 @@ function getPartnerNetwork(telegramId) {
       const level3Partners = partnersData.filter(row => String(row[9] || '').trim() === partnerTgId);
       level3.push(...level3Partners);
     });
+    console.log('Level 3 partners found:', level3.length);
     
     // Уровень 4
     level3.forEach(partner => {
@@ -769,6 +797,7 @@ function getPartnerNetwork(telegramId) {
       const level4Partners = partnersData.filter(row => String(row[9] || '').trim() === partnerTgId);
       level4.push(...level4Partners);
     });
+    console.log('Level 4 partners found:', level4.length);
     
     // Маппим все поля партнера для полной информации
     const mapPartner = (row) => ({
@@ -794,11 +823,23 @@ function getPartnerNetwork(telegramId) {
       level4: level4.map(mapPartner)
     };
     
+    console.log('Network structure created:');
+    console.log('Level 1 count:', network.level1.length);
+    console.log('Level 2 count:', network.level2.length);
+    console.log('Level 3 count:', network.level3.length);
+    console.log('Level 4 count:', network.level4.length);
+    
+    if (network.level1.length > 0) {
+      console.log('Sample level 1 partner:', network.level1[0]);
+    }
+    
+    console.log('=== GET PARTNER NETWORK END ===');
     return { success: true, network };
     
   } catch (error) {
     console.error('Get network error:', error);
-    return { success: false, error: 'Ошибка при получении сети партнеров' };
+    console.error('Error stack:', error.stack);
+    return { success: false, error: 'Ошибка при получении сети партнеров: ' + error.toString() };
   }
 }
 

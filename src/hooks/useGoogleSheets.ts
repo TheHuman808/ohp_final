@@ -195,11 +195,21 @@ export const usePartnerNetwork = (telegramId: string) => {
       
       console.log('=== FETCHING NETWORK FOR USER ===');
       console.log('Telegram ID:', telegramId);
+      console.log('Telegram ID type:', typeof telegramId);
+      console.log('Telegram ID length:', telegramId?.length);
       
       // Получаем сеть ТОЛЬКО для этого пользователя
       const networkData = await googleSheetsService.getPartnerNetwork(telegramId);
       
+      console.log('=== NETWORK DATA RECEIVED ===');
       console.log('Network data for user:', networkData);
+      console.log('Network data type:', typeof networkData);
+      console.log('Level 1:', networkData?.level1);
+      console.log('Level 1 length:', networkData?.level1?.length);
+      console.log('Level 2 length:', networkData?.level2?.length);
+      console.log('Level 3 length:', networkData?.level3?.length);
+      console.log('Level 4 length:', networkData?.level4?.length);
+      
       setNetwork(networkData);
     } catch (err) {
       console.error('Error fetching network:', err);

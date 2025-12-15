@@ -336,9 +336,36 @@ class GoogleSheetsService {
       // Используем Apps Script для получения сети партнеров
       const result = await this.readFromAppsScript('getPartnerNetwork', { telegramId });
       
-      if (result.success && result.result && result.result.network) {
-        const networkData = result.result.network;
-        console.log('Network data from Apps Script:', networkData);
+      console.log('=== APPS SCRIPT RESULT ===');
+      console.log('Full result:', JSON.stringify(result, null, 2));
+      
+      // Apps Script возвращает { success: true, network: {...} } напрямую
+      // result.result содержит весь ответ от Apps Script
+      if (result.success && result.result) {
+        console.log('Result.result:', result.result);
+        console.log('Result.result.success:', result.result.success);
+        console.log('Result.result.network:', result.result.network);
+        
+        // Проверяем разные варианты структуры ответа
+        let networkData = null;
+        
+        // Вариант 1: result.result = { success: true, network: {...} }
+        if (result.result.network) {
+          networkData = result.result.network;
+          console.log('Using result.result.network');
+        }
+        // Вариант 2: result.result = { level1: [...], level2: [...] } напрямую
+        else if (result.result.level1 || result.result.level2 || result.result.level3 || result.result.level4) {
+          networkData = result.result;
+          console.log('Using result.result directly');
+        }
+        
+        if (networkData && (networkData.level1 || networkData.level2 || networkData.level3 || networkData.level4)) {
+          console.log('Network data from Apps Script:', networkData);
+          console.log('Level 1 count:', networkData.level1?.length || 0);
+          console.log('Level 2 count:', networkData.level2?.length || 0);
+          console.log('Level 3 count:', networkData.level3?.length || 0);
+          console.log('Level 4 count:', networkData.level4?.length || 0);
         
         // Маппим данные из Apps Script в формат PartnerRecord
         const mapPartner = (partner: any): PartnerRecord => ({
@@ -364,14 +391,19 @@ class GoogleSheetsService {
           level4: (networkData.level4 || []).map(mapPartner)
         };
         
-        console.log('Mapped network data:', network);
-        console.log(`Level 1: ${network.level1.length}, Level 2: ${network.level2.length}, Level 3: ${network.level3.length}, Level 4: ${network.level4.length}`);
-        console.log('=== GET PARTNER NETWORK END ===');
-        return network;
+          console.log('Mapped network data:', network);
+          console.log(`Level 1: ${network.level1.length}, Level 2: ${network.level2.length}, Level 3: ${network.level3.length}, Level 4: ${network.level4.length}`);
+          console.log('=== GET PARTNER NETWORK END ===');
+          return network;
+        } else {
+          console.warn('Apps Script returned data but network structure is invalid:', networkData);
+        }
+      } else {
+        console.warn('Apps Script request failed or returned invalid data:', result);
       }
       
       // Fallback: читаем напрямую из Google Sheets API
-      console.log('Apps Script failed, trying direct Google Sheets API...');
+      console.log('Apps Script failed or returned invalid data, trying direct Google Sheets API...');
       const url = `${this.baseUrl}/${this.spreadsheetId}/values/Партнеры!A:M?key=${this.apiKey}`;
       const response = await fetch(url);
       
