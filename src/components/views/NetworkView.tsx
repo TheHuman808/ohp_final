@@ -98,12 +98,13 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Отладочная информация */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs">
-                    <p>Network data: Level1={network.level1?.length || 0}, Level2={network.level2?.length || 0}, Level3={network.level3?.length || 0}, Level4={network.level4?.length || 0}</p>
-                  </div>
-                )}
+                {/* Отладочная информация - всегда показываем для отладки */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-xs">
+                  <p className="font-semibold mb-2">Отладочная информация:</p>
+                  <p>Network data: Level1={network?.level1?.length || 0}, Level2={network?.level2?.length || 0}, Level3={network?.level3?.length || 0}, Level4={network?.level4?.length || 0}</p>
+                  <p>Network object: {JSON.stringify(network, null, 2).substring(0, 500)}</p>
+                  <p>Level1 data sample: {network?.level1?.[0] ? JSON.stringify(network.level1[0]) : 'нет данных'}</p>
+                </div>
                 
                 {levelsLoading ? (
                   <div className="text-center py-8">

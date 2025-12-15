@@ -453,31 +453,31 @@ class GoogleSheetsService {
           console.log('Level 2 count:', networkData.level2?.length || 0);
           console.log('Level 3 count:', networkData.level3?.length || 0);
           console.log('Level 4 count:', networkData.level4?.length || 0);
-        
-        // Маппим данные из Apps Script в формат PartnerRecord
-        const mapPartner = (partner: any): PartnerRecord => ({
-          id: String(partner.id || ''),
-          telegramId: String(partner.telegramId || '').trim(),
-          firstName: String(partner.firstName || '').trim(),
-          lastName: String(partner.lastName || '').trim(),
-          phone: String(partner.phone || '').trim(),
-          email: String(partner.email || '').trim(),
-          username: partner.username ? String(partner.username).trim() : undefined,
-          promoCode: String(partner.promoCode || '').trim(),
-          inviterCode: partner.inviterCode ? String(partner.inviterCode).trim() : undefined,
-          inviterTelegramId: partner.inviterTelegramId ? String(partner.inviterTelegramId).trim() : undefined,
-          registrationDate: String(partner.registrationDate || '').trim(),
-          totalEarnings: parseFloat(partner.totalEarnings) || 0,
-          salesCount: parseInt(partner.salesCount) || 0
-        });
-        
-        const network: NetworkData = {
-          level1: (networkData.level1 || []).map(mapPartner),
-          level2: (networkData.level2 || []).map(mapPartner),
-          level3: (networkData.level3 || []).map(mapPartner),
-          level4: (networkData.level4 || []).map(mapPartner)
-        };
-        
+          
+          // Маппим данные из Apps Script в формат PartnerRecord
+          const mapPartner = (partner: any): PartnerRecord => ({
+            id: String(partner.id || ''),
+            telegramId: String(partner.telegramId || '').trim(),
+            firstName: String(partner.firstName || '').trim(),
+            lastName: String(partner.lastName || '').trim(),
+            phone: String(partner.phone || '').trim(),
+            email: String(partner.email || '').trim(),
+            username: partner.username ? String(partner.username).trim() : undefined,
+            promoCode: String(partner.promoCode || '').trim(),
+            inviterCode: partner.inviterCode ? String(partner.inviterCode).trim() : undefined,
+            inviterTelegramId: partner.inviterTelegramId ? String(partner.inviterTelegramId).trim() : undefined,
+            registrationDate: String(partner.registrationDate || '').trim(),
+            totalEarnings: parseFloat(partner.totalEarnings) || 0,
+            salesCount: parseInt(partner.salesCount) || 0
+          });
+          
+          const network: NetworkData = {
+            level1: (networkData.level1 || []).map(mapPartner),
+            level2: (networkData.level2 || []).map(mapPartner),
+            level3: (networkData.level3 || []).map(mapPartner),
+            level4: (networkData.level4 || []).map(mapPartner)
+          };
+          
           console.log('Mapped network data:', network);
           console.log(`Level 1: ${network.level1.length}, Level 2: ${network.level2.length}, Level 3: ${network.level3.length}, Level 4: ${network.level4.length}`);
           console.log('=== GET PARTNER NETWORK END ===');
