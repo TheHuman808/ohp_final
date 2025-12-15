@@ -260,7 +260,10 @@ function importOrdersToSalesSheet() {
     if (lastRow <= 1) return [];
 
     // Читаем диапазон до колонки AB (28), чтобы захватить все нужные колонки
-    const dataRange = sheet.getRange(2, 1, lastRow - 1, FIELD_INDICES.COL_DATE).getValues();
+    // Убеждаемся, что читаем минимум до колонки Q (17) для Product name(QTY)(SKU)
+    const maxColumn = Math.max(FIELD_INDICES.COL_DATE, FIELD_INDICES.PRODUCT_NAME_QTY);
+    const dataRange = sheet.getRange(2, 1, lastRow - 1, maxColumn).getValues();
+    console.log(`Reading ${lastRow - 1} rows from ${sheetName}, columns 1-${maxColumn}`);
     
     return dataRange.map(row => {
       const orderId = row[FIELD_INDICES.ORDER_ID - 1];
@@ -270,15 +273,21 @@ function importOrdersToSalesSheet() {
       const totalVal = row[FIELD_INDICES.ORDER_TOTAL - 1];      
       const promoEmailVal = row[FIELD_INDICES.COL_PROMO_OR_EMAIL - 1]; 
       const noteVal = row[FIELD_INDICES.COL_NOTE - 1];
-      const productNameQty = row[FIELD_INDICES.PRODUCT_NAME_QTY - 1]; // Q - Product name(QTY)(SKU)
+      const productNameQty = row[FIELD_INDICES.PRODUCT_NAME_QTY - 1]; // Q - Product name(QTY)(SKU) (индекс 16, так как массив начинается с 0)
       
       console.log(`Processing order ${orderId}:`);
-      console.log('  Product name(QTY)(SKU):', productNameQty);
+      console.log('  Product name(QTY)(SKU) raw value:', productNameQty);
       console.log('  Product name(QTY)(SKU) type:', typeof productNameQty);
+      console.log('  Product name(QTY)(SKU) column index:', FIELD_INDICES.PRODUCT_NAME_QTY);
+      console.log('  Product name(QTY)(SKU) array index:', FIELD_INDICES.PRODUCT_NAME_QTY - 1);
       
       // Извлекаем количество из Product name(QTY)(SKU)
       const quantity = extractQuantity(productNameQty);
       console.log(`  Extracted quantity for order ${orderId}:`, quantity);
+      
+      if (quantity === 0 && productNameQty) {
+        console.warn(`  WARNING: Quantity is 0 but productNameQty is not empty: "${productNameQty}"`);
+      }
       
       // Правильная структура: ID, Количество, Сумма, Промокод, Информация о клиенте, Статус, Дата продажи
       return [
