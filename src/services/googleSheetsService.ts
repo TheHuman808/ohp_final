@@ -144,6 +144,60 @@ class GoogleSheetsService {
       console.log('=== GET PARTNER COMMISSIONS START ===');
       console.log('Getting commissions for Telegram ID:', telegramId);
       
+      // Используем Apps Script для получения начислений
+      const result = await this.readFromAppsScript('getPartnerCommissions', { telegramId });
+      
+      console.log('=== APPS SCRIPT COMMISSIONS RESULT ===');
+      console.log('Full result:', JSON.stringify(result, null, 2));
+      
+      if (result.success && result.result) {
+        console.log('Result.result:', result.result);
+        console.log('Result.result.success:', result.result.success);
+        console.log('Result.result.commissions:', result.result.commissions);
+        
+        // Apps Script возвращает { success: true, commissions: [...] }
+        let commissionsData = null;
+        
+        // Вариант 1: result.result = { success: true, commissions: [...] }
+        if (result.result.commissions && Array.isArray(result.result.commissions)) {
+          commissionsData = result.result.commissions;
+          console.log('Using result.result.commissions');
+        }
+        // Вариант 2: result.result = [...] напрямую
+        else if (Array.isArray(result.result)) {
+          commissionsData = result.result;
+          console.log('Using result.result directly as array');
+        }
+        
+        if (commissionsData && commissionsData.length > 0) {
+          console.log('Commissions data from Apps Script:', commissionsData);
+          console.log('Commissions count:', commissionsData.length);
+          console.log('Sample commission:', commissionsData[0]);
+          
+          // Маппим данные из Apps Script в формат CommissionRecord
+          const mappedCommissions: CommissionRecord[] = commissionsData.map((comm: any) => ({
+            id: String(comm.id || '').trim(),
+            saleId: String(comm.saleId || '').trim(),
+            partnerTelegramId: String(comm.partnerTelegramId || '').trim(),
+            level: parseInt(comm.level) || 1,
+            amount: parseFloat(comm.amount) || 0,
+            commission: parseFloat(comm.commission) || 0, // Процент
+            date: String(comm.date || '').trim()
+          }));
+          
+          console.log('Mapped commissions:', mappedCommissions);
+          console.log('=== GET PARTNER COMMISSIONS END ===');
+          return mappedCommissions;
+        } else {
+          console.warn('Apps Script returned data but commissions array is empty or invalid');
+        }
+      } else {
+        console.warn('Apps Script request failed or returned invalid data:', result);
+      }
+      
+      // Fallback: читаем напрямую из Google Sheets API
+      console.log('Apps Script failed or returned invalid data, trying direct Google Sheets API...');
+      
       // Пробуем разные варианты названий листа
       const possibleSheetNames = ['Начисления', 'Комиссии', 'Commissions', 'Начисление'];
       let commissions: any[] = [];

@@ -17,6 +17,13 @@ interface StatsViewProps {
 
 const StatsView = ({ commissions, commissionsLoading, currentView, onViewChange, onLogout }: StatsViewProps) => {
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
+  
+  // Отладочная информация
+  console.log('=== STATS VIEW DEBUG ===');
+  console.log('StatsView - commissions:', commissions);
+  console.log('StatsView - commissionsLoading:', commissionsLoading);
+  console.log('StatsView - commissions count:', commissions?.length || 0);
+  console.log('StatsView - first commission:', commissions?.[0]);
 
   // Функция для парсинга даты из формата DD.MM.YYYY
   const parseDate = (dateString: string): Date | null => {
@@ -225,7 +232,7 @@ const StatsView = ({ commissions, commissionsLoading, currentView, onViewChange,
                             Уровень {commission.level || 1}
                           </span>
                         </TableCell>
-                        <TableCell>{((commission.percentage || 0) * 100).toFixed(1)}%</TableCell>
+                        <TableCell>{((commission.commission || 0) * 100).toFixed(1)}%</TableCell>
                         <TableCell className="text-xs text-gray-500">{commission.saleId || 'N/A'}</TableCell>
                       </TableRow>
                     ))}
