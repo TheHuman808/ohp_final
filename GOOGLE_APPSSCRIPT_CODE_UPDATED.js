@@ -464,6 +464,19 @@ function calculateCommissions() {
   
   // Правильная структура листа Продажи: A=ID, B=Количество, C=Сумма, D=Промокод, E=Информация о клиенте, F=Статус, G=Дата продажи
   const salesData = salesSheet.getRange(2, 1, salesLastRow - 1, 7).getValues();
+  
+  // Создаем словарь для быстрого доступа к количеству по ID продажи
+  const salesQuantityMap = {};
+  salesData.forEach(sale => {
+    const saleId = String(sale[0] || '').trim();
+    const quantity = parseInt(sale[1]) || 0; // Колонка B - Количество
+    if (saleId) {
+      salesQuantityMap[saleId] = quantity;
+    }
+  });
+  console.log(`Created sales quantity map with ${Object.keys(salesQuantityMap).length} entries`);
+  console.log('Sample quantities:', Object.entries(salesQuantityMap).slice(0, 5));
+  
   let newAccruals = [];
 
   salesData.forEach((sale) => {
@@ -564,19 +577,28 @@ function calculateCommissions() {
         
         if (!existingAccruals.has(uniqueKey)) {
           const commissionAmount = saleSum * percentage;
+          const quantity = salesQuantityMap[saleId] || 0; // Получаем количество из словаря
           
-          // Структура листа Начисления: A=ID (информация из продажи), B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент
+          // Структура листа Начисления: 
+          // A=ID, B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных
+          const today = new Date();
+          const dateStr = Utilities.formatDate(today, Session.getScriptTimeZone(), 'dd.MM.yyyy');
+          
           newAccruals.push([
             customerInfo || saleId,     // A: ID (информация о клиенте или ID продажи)
             saleId,                      // B: ID продажи
             beneficiary.tgId,             // C: Telegram ID партнера (получателя комиссии)
             level,                       // D: Уровень
             commissionAmount,            // E: Сумма комиссии
-            percentage                   // F: Процент
+            percentage,                  // F: Процент
+            dateStr,                     // G: Дата расчета
+            '',                          // H: Рассчитались (пусто по умолчанию)
+            commissionAmount,            // I: Остаток (равен сумме, пока не рассчитано)
+            quantity                     // J: Количество проданных
           ]);
           
           existingAccruals.add(uniqueKey); // Добавляем, чтобы избежать дублей в этой же сессии
-          console.log(`Sale ${saleId}: Added accrual for partner ${beneficiary.tgId} at level ${level}, amount: ${commissionAmount}`);
+          console.log(`Sale ${saleId}: Added accrual for partner ${beneficiary.tgId} at level ${level}, amount: ${commissionAmount}, quantity: ${quantity}`);
         } else {
           console.log(`Sale ${saleId}: Accrual already exists for partner ${beneficiary.tgId} at level ${level}`);
         }
@@ -589,8 +611,9 @@ function calculateCommissions() {
 
   // --- ШАГ 5: ЗАПИСЬ РЕЗУЛЬТАТОВ ---
   if (newAccruals.length > 0) {
-    accrualsSheet.getRange(accLastRow + 1, 1, newAccruals.length, 6).setValues(newAccruals);
-    console.log(`Добавлено ${newAccruals.length} новых начислений.`);
+    // Записываем все 10 колонок: A=ID, B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных
+    accrualsSheet.getRange(accLastRow + 1, 1, newAccruals.length, 10).setValues(newAccruals);
+    console.log(`Добавлено ${newAccruals.length} новых начислений с количеством проданных.`);
     
     // Обновляем количество продаж после добавления новых начислений
     updatePartnersSalesCount();
