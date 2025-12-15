@@ -10,12 +10,13 @@ import type { CommissionRecord } from "@/services/googleSheetsService";
 interface StatsViewProps {
   commissions: CommissionRecord[];
   commissionsLoading: boolean;
+  commissionsError?: string | null;
   currentView: "registration" | "dashboard" | "stats" | "network" | "personalData";
   onViewChange: (view: "registration" | "dashboard" | "stats" | "network" | "personalData") => void;
   onLogout?: () => void;
 }
 
-const StatsView = ({ commissions, commissionsLoading, currentView, onViewChange, onLogout }: StatsViewProps) => {
+const StatsView = ({ commissions, commissionsLoading, commissionsError, currentView, onViewChange, onLogout }: StatsViewProps) => {
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
   
   // Отладочная информация
@@ -203,7 +204,13 @@ const StatsView = ({ commissions, commissionsLoading, currentView, onViewChange,
             <CardTitle>Детализация начислений</CardTitle>
           </CardHeader>
           <CardContent>
-            {commissionsLoading ? (
+            {commissionsError ? (
+              <div className="text-center py-8">
+                <p className="text-red-600 font-semibold mb-2">Ошибка загрузки начислений</p>
+                <p className="text-sm text-gray-600">{commissionsError}</p>
+                <p className="text-xs text-gray-500 mt-2">Проверьте консоль браузера для деталей</p>
+              </div>
+            ) : commissionsLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
                 <p className="text-gray-600">Загрузка начислений...</p>

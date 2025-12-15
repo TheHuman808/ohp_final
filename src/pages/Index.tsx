@@ -391,6 +391,7 @@ const Index = () => {
         <StatsView
           commissions={commissions}
           commissionsLoading={commissionsLoading}
+          commissionsError={commissionsError}
           currentView={currentView}
           onViewChange={handleViewChange}
           onLogout={handleLogout}
