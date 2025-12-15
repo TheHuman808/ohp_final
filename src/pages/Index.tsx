@@ -155,12 +155,24 @@ const Index = () => {
     refreshPartner
   } = usePartner(loggedOut ? '' : (telegramUser?.id || ''), forceRefresh);
 
-  const { 
-    commissions, 
+  const telegramIdForCommissions = loggedOut ? '' : (telegramUser?.id || '');
+  console.log('=== INDEX.TSX COMMISSIONS FETCH ===');
+  console.log('telegramUser:', telegramUser);
+  console.log('telegramIdForCommissions:', telegramIdForCommissions);
+  console.log('loggedOut:', loggedOut);
+  
+  const {
+    commissions,
     loading: commissionsLoading, 
     error: commissionsError,
     refresh: refreshCommissions
-  } = usePartnerCommissions(loggedOut ? '' : (telegramUser?.id || ''));
+  } = usePartnerCommissions(telegramIdForCommissions);
+  
+  console.log('=== INDEX.TSX COMMISSIONS DATA ===');
+  console.log('commissions:', commissions);
+  console.log('commissionsLoading:', commissionsLoading);
+  console.log('commissionsError:', commissionsError);
+  console.log('commissions count:', commissions?.length || 0);
 
   const telegramIdForNetwork = loggedOut ? '' : (telegramUser?.id || '');
   console.log('=== INDEX.TSX NETWORK FETCH ===');
