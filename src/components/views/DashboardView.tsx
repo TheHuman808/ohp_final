@@ -65,24 +65,6 @@ const DashboardView = ({ partner, commissions, stats, statsLoading, network, cur
                     </div>
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <Layers className="w-6 h-6 text-blue-600" />
-                    <div>
-                      <p className="text-sm text-gray-600">Доход от уровней</p>
-                      <p className="text-lg font-bold text-blue-700">₽{stats.incomeByLevels.toLocaleString('ru-RU')}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
-                    <DollarSign className="w-6 h-6 text-green-600" />
-                    <div>
-                      <p className="text-sm text-gray-600">Доход от партнеров</p>
-                      <p className="text-lg font-bold text-green-700">₽{stats.incomeFromPartners.toLocaleString('ru-RU')}</p>
-                    </div>
-                  </div>
-                </div>
               </>
             ) : (
               <div className="text-center py-4">

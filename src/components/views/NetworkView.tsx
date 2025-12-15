@@ -36,11 +36,15 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
   const renderPartnerCard = (partner: PartnerRecord) => {
     try {
       const totalEarnings = partner.totalEarnings || 0;
+      // Формируем имя: Имя + первая буква фамилии (если есть)
+      const lastNameInitial = partner.lastName && partner.lastName.trim() ? partner.lastName.trim()[0].toUpperCase() + '.' : '';
+      const displayName = `${partner.firstName || ''} ${lastNameInitial}`.trim();
+      
       return (
         <div key={partner.id} className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
           <div className="flex items-center gap-2">
             <User className="w-5 h-5 text-gray-500" />
-            <span className="font-semibold text-base">{partner.firstName || ''} {partner.lastName || ''}</span>
+            <span className="font-semibold text-base">{displayName}</span>
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">

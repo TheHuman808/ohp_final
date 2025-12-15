@@ -700,15 +700,43 @@ function getPartnerCommissions(telegramId) {
     
     console.log(`Filtered ${partnerCommissions.length} commissions for Telegram ID ${searchTgId}`);
     
-    const commissions = partnerCommissions.map(row => ({
-      id: String(row[0] || '').trim(),
-      saleId: String(row[1] || '').trim(),
-      partnerTelegramId: String(row[2] || '').trim(),
-      level: parseInt(row[3]) || 1,
-      amount: parseFloat(row[4]) || 0,
-      commission: parseFloat(row[5]) || 0,
-      date: String(row[6] || '').trim() // Дата расчета
-    }));
+    // Получаем даты продаж из листа "Продажи"
+    const salesSheet = spreadsheet.getSheetByName('Продажи');
+    let salesDatesMap = {};
+    
+    if (salesSheet) {
+      const salesLastRow = salesSheet.getLastRow();
+      if (salesLastRow > 1) {
+        // Структура листа Продажи: A=ID, B=Количество, C=Дата, D=Сумма, E=Промокод, F=Информация о клиенте, G=Статус
+        const salesData = salesSheet.getRange(2, 1, salesLastRow - 1, 7).getValues();
+        salesData.forEach(saleRow => {
+          const saleId = String(saleRow[0] || '').trim();
+          const saleDate = saleRow[2]; // Колонка C - Дата
+          if (saleId) {
+            salesDatesMap[saleId] = saleDate ? (saleDate instanceof Date ? Utilities.formatDate(saleDate, Session.getScriptTimeZone(), 'dd.MM.yyyy') : String(saleDate)) : '';
+          }
+        });
+        console.log(`Loaded ${Object.keys(salesDatesMap).length} sale dates from Продажи sheet`);
+      }
+    } else {
+      console.warn('Лист "Продажи" не найден, даты продаж не будут добавлены');
+    }
+    
+    const commissions = partnerCommissions.map(row => {
+      const saleId = String(row[1] || '').trim();
+      const saleDate = salesDatesMap[saleId] || '';
+      
+      return {
+        id: String(row[0] || '').trim(),
+        saleId: saleId,
+        partnerTelegramId: String(row[2] || '').trim(),
+        level: parseInt(row[3]) || 1,
+        amount: parseFloat(row[4]) || 0,
+        commission: parseFloat(row[5]) || 0,
+        date: String(row[6] || '').trim(), // Дата расчета
+        saleDate: saleDate // Дата продажи
+      };
+    });
     
     console.log(`Returning ${commissions.length} commissions for partner ${telegramId}`);
     console.log('=== GET PARTNER COMMISSIONS END ===');

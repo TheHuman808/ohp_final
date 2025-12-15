@@ -220,7 +220,8 @@ const StatsView = ({ commissions, commissionsLoading, commissionsError, currentV
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Дата</TableHead>
+                      <TableHead>Дата продажи</TableHead>
+                      <TableHead>Дата расчета</TableHead>
                       <TableHead>Сумма</TableHead>
                       <TableHead>Уровень</TableHead>
                       <TableHead>Процент</TableHead>
@@ -232,13 +233,14 @@ const StatsView = ({ commissions, commissionsLoading, commissionsError, currentV
                       console.log(`Rendering commission ${index}:`, commission);
                       return (
                         <TableRow key={commission.id || `commission-${index}`}>
+                          <TableCell>{formatDate(commission.saleDate || '')}</TableCell>
                           <TableCell>{formatDate(commission.date)}</TableCell>
                           <TableCell className="font-semibold text-green-600">
                             ₽{(commission.amount || 0).toLocaleString('ru-RU')}
                           </TableCell>
                           <TableCell>
                             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                              Уровень {commission.level || 1}
+                              {commission.level || 1}
                             </span>
                           </TableCell>
                           <TableCell>{((commission.commission || 0) * 100).toFixed(1)}%</TableCell>

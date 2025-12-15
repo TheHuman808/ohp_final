@@ -25,7 +25,8 @@ interface CommissionRecord {
   level: number;
   amount: number;
   commission: number;
-  date: string;
+  date: string; // Дата расчета
+  saleDate?: string; // Дата продажи
 }
 
 interface PartnerStats {
@@ -185,24 +186,25 @@ class GoogleSheetsService {
               console.log('✅ Sample commission:', commissionsData[0]);
               console.log('✅ Sample commission keys:', Object.keys(commissionsData[0] || {}));
               
-              // Маппим данные из Apps Script в формат CommissionRecord
-              const mappedCommissions: CommissionRecord[] = commissionsData.map((comm: any, index: number) => {
-                const mapped = {
-                  id: String(comm.id || '').trim(),
-                  saleId: String(comm.saleId || '').trim(),
-                  partnerTelegramId: String(comm.partnerTelegramId || '').trim(),
-                  level: parseInt(String(comm.level || '1')) || 1,
-                  amount: parseFloat(String(comm.amount || '0')) || 0,
-                  commission: parseFloat(String(comm.commission || '0')) || 0, // Процент
-                  date: String(comm.date || '').trim()
-                };
-                
-                if (index < 3) {
-                  console.log(`Mapping commission ${index}:`, { original: comm, mapped });
-                }
-                
-                return mapped;
-              });
+          // Маппим данные из Apps Script в формат CommissionRecord
+          const mappedCommissions: CommissionRecord[] = commissionsData.map((comm: any, index: number) => {
+            const mapped = {
+              id: String(comm.id || '').trim(),
+              saleId: String(comm.saleId || '').trim(),
+              partnerTelegramId: String(comm.partnerTelegramId || '').trim(),
+              level: parseInt(String(comm.level || '1')) || 1,
+              amount: parseFloat(String(comm.amount || '0')) || 0,
+              commission: parseFloat(String(comm.commission || '0')) || 0, // Процент
+              date: String(comm.date || '').trim(), // Дата расчета
+              saleDate: comm.saleDate ? String(comm.saleDate).trim() : undefined // Дата продажи
+            };
+            
+            if (index < 3) {
+              console.log(`Mapping commission ${index}:`, { original: comm, mapped });
+            }
+            
+            return mapped;
+          });
               
               console.log('✅ Mapped commissions:', mappedCommissions);
               console.log('✅ Mapped commissions count:', mappedCommissions.length);
