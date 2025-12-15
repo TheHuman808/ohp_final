@@ -887,15 +887,26 @@ function getPartnerCommissions(telegramId) {
           }
         });
         console.log(`Loaded ${Object.keys(salesDatesMap).length} sale dates from Продажи sheet`);
-        console.log('Sample sale dates:', Object.entries(salesDatesMap).slice(0, 3));
+        console.log('Sample sale dates:', Object.entries(salesDatesMap).slice(0, 5));
+        console.log('Sales dates map keys (first 5):', Object.keys(salesDatesMap).slice(0, 5));
+        console.log('Sales dates map values (first 5):', Object.values(salesDatesMap).slice(0, 5));
       }
     } else {
       console.warn('Лист "Продажи" не найден, даты продаж не будут добавлены');
     }
     
-    const commissions = partnerCommissions.map(row => {
+    const commissions = partnerCommissions.map((row, index) => {
       const saleId = String(row[1] || '').trim();
       const saleDate = salesDatesMap[saleId] || '';
+      
+      if (index < 3) {
+        console.log(`Mapping commission ${index}:`, {
+          saleId: saleId,
+          saleDateFromMap: saleDate,
+          saleDateExists: !!salesDatesMap[saleId],
+          allSaleIds: Object.keys(salesDatesMap).slice(0, 5)
+        });
+      }
       
       return {
         id: String(row[0] || '').trim(),
