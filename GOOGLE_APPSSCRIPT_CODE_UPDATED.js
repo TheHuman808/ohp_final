@@ -1106,27 +1106,47 @@ function updatePartnersSalesCount() {
 }
 
 // ==========================================
-// ФУНКЦИЯ: НАСТРОЙКА ТРИГГЕРА ДЛЯ АВТОМАТИЧЕСКОГО ОБНОВЛЕНИЯ
+// ФУНКЦИЯ: НАСТРОЙКА ТРИГГЕРА ДЛЯ АВТОМАТИЧЕСКОГО ОБНОВЛЕНИЯ КОЛИЧЕСТВА ПРОДАЖ
 // ==========================================
+// ВАЖНО: Эта функция должна быть запущена ВРУЧНУЮ один раз в редакторе Apps Script
+// для создания триггера. Триггеры нельзя создавать автоматически через веб-приложение.
+//
+// Инструкция:
+// 1. Откройте редактор Apps Script
+// 2. Выберите функцию setupSalesCountUpdateTrigger в выпадающем списке
+// 3. Нажмите "Выполнить"
+// 4. Разрешите доступ при запросе авторизации
+//
+// Альтернативный способ:
+// 1. Перейдите в меню: Триггеры -> Добавить триггер
+// 2. Выберите функцию: updatePartnersSalesCount
+// 3. Выберите источник события: По времени
+// 4. Выберите тип события: Минутный таймер
+// 5. Выберите интервал: Каждую минуту
 
 function setupSalesCountUpdateTrigger() {
-  // Удаляем существующие триггеры для этой функции
-  const triggers = ScriptApp.getProjectTriggers();
-  triggers.forEach(trigger => {
-    if (trigger.getHandlerFunction() === 'updatePartnersSalesCount') {
-      ScriptApp.deleteTrigger(trigger);
-      console.log('Deleted existing trigger');
-    }
-  });
-  
-  // Создаем новый триггер на каждую минуту
-  ScriptApp.newTrigger('updatePartnersSalesCount')
-    .timeBased()
-    .everyMinutes(1)
-    .create();
-  
-  console.log('Created new trigger for updatePartnersSalesCount (every 1 minute)');
-  return { success: true, message: 'Триггер настроен на обновление каждую минуту' };
+  try {
+    // Удаляем существующие триггеры для этой функции
+    const triggers = ScriptApp.getProjectTriggers();
+    triggers.forEach(trigger => {
+      if (trigger.getHandlerFunction() === 'updatePartnersSalesCount') {
+        ScriptApp.deleteTrigger(trigger);
+        console.log('Deleted existing trigger');
+      }
+    });
+    
+    // Создаем новый триггер на каждую минуту
+    ScriptApp.newTrigger('updatePartnersSalesCount')
+      .timeBased()
+      .everyMinutes(1)
+      .create();
+    
+    console.log('Created new trigger for updatePartnersSalesCount (every 1 minute)');
+    return { success: true, message: 'Триггер настроен на обновление каждую минуту' };
+  } catch (error) {
+    console.error('Error setting up trigger:', error);
+    return { success: false, error: 'Ошибка при создании триггера: ' + error.toString() };
+  }
 }
 
 // ==========================================
