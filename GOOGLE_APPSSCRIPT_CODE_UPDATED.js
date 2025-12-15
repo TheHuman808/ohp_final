@@ -1165,8 +1165,8 @@ function updatePartnersSalesCount() {
   let salesByPartner = {}; // { telegramId: Set of unique sale IDs }
   
   if (accrualsLastRow > 1) {
-    // Структура листа Начисления: A=ID, B=ID продажи, C=Telegram ID партнера, ...
-    const accrualsData = accrualsSheet.getRange(2, 1, accrualsLastRow - 1, 9).getValues();
+    // Структура листа Начисления: A=ID, B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных
+    const accrualsData = accrualsSheet.getRange(2, 1, accrualsLastRow - 1, 10).getValues();
     
     accrualsData.forEach(row => {
       const saleId = String(row[1] || '').trim(); // B - ID продажи
