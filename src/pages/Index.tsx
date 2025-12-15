@@ -162,11 +162,17 @@ const Index = () => {
     refresh: refreshCommissions
   } = usePartnerCommissions(loggedOut ? '' : (telegramUser?.id || ''));
 
+  const telegramIdForNetwork = loggedOut ? '' : (telegramUser?.id || '');
+  console.log('=== INDEX.TSX NETWORK FETCH ===');
+  console.log('telegramUser:', telegramUser);
+  console.log('telegramIdForNetwork:', telegramIdForNetwork);
+  console.log('loggedOut:', loggedOut);
+  
   const {
     network,
     loading: networkLoading,
     error: networkError
-  } = usePartnerNetwork(loggedOut ? '' : (telegramUser?.id || ''));
+  } = usePartnerNetwork(telegramIdForNetwork);
 
   const {
     stats,
