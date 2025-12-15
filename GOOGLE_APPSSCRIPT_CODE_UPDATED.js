@@ -3,14 +3,16 @@
 // ==========================================
 
 function doGet(e) {
-  // Проверяем и настраиваем триггер при первом запуске
+  // Проверяем и настраиваем триггеры при первом запуске
   ensureSalesCountUpdateTrigger();
+  ensureImportOrdersTrigger();
   return handleRequest(e);
 }
 
 function doPost(e) {
-  // Проверяем и настраиваем триггер при первом запуске
+  // Проверяем и настраиваем триггеры при первом запуске
   ensureSalesCountUpdateTrigger();
+  ensureImportOrdersTrigger();
   return handleRequest(e);
 }
 
@@ -31,6 +33,22 @@ function ensureSalesCountUpdateTrigger() {
     }
   } catch (error) {
     console.error('Ошибка при проверке триггера:', error);
+  }
+}
+
+function ensureImportOrdersTrigger() {
+  try {
+    const triggers = ScriptApp.getProjectTriggers();
+    const hasTrigger = triggers.some(trigger => 
+      trigger.getHandlerFunction() === 'importOrdersToSalesSheet'
+    );
+    
+    if (!hasTrigger) {
+      console.log('Триггер для импорта заказов не найден, создаем новый...');
+      setupImportOrdersTrigger();
+    }
+  } catch (error) {
+    console.error('Ошибка при проверке триггера импорта заказов:', error);
   }
 }
 
@@ -130,6 +148,9 @@ function handleRequest(e) {
           case 'setupSalesCountUpdateTrigger':
             result = setupSalesCountUpdateTrigger();
             break;
+          case 'setupImportOrdersTrigger':
+            result = setupImportOrdersTrigger();
+            break;
           default:
             result = { success: false, error: 'Unknown action: ' + action };
         }
@@ -223,15 +244,15 @@ function importOrdersToSalesSheet() {
       // Извлекаем количество из Product name(QTY)(SKU)
       const quantity = extractQuantity(productNameQty);
       
-      // Новая структура: ID, Количество, Дата, Сумма, Промокод, Информация о клиенте, Статус
+      // Правильная структура: ID, Количество, Сумма, Промокод, Информация о клиенте, Статус, Дата продажи
       return [
-        orderId,
-        quantity,        // Количество (без скобок)
-        dateVal,
-        totalVal,
-        promoEmailVal,
-        noteVal,
-        sheetName 
+        orderId,         // ID
+        quantity,        // Количество (извлечено из Product name(QTY)(SKU))
+        totalVal,        // Сумма
+        promoEmailVal,   // Промокод
+        noteVal,         // Информация о клиенте
+        sheetName,       // Статус
+        dateVal          // Дата продажи
       ];
     }).filter(row => row !== null);
   }
@@ -248,10 +269,19 @@ function importOrdersToSalesSheet() {
   
   salesSheet.clearContents(); 
   
-  // Новая структура: ID, Количество, Дата, Сумма, Промокод, Информация о клиенте, Статус
-  const headers = ['ID', 'Количество', 'Дата', 'Сумма', 'Промокод', 'Информация о клиенте', 'Статус'];
+  // Правильная структура: ID, Количество, Сумма, Промокод, Информация о клиенте, Статус, Дата продажи
+  const headers = ['ID', 'Количество', 'Сумма', 'Промокод', 'Информация о клиенте', 'Статус', 'Дата продажи'];
   salesSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
   salesSheet.getRange(2, 1, allOrders.length, allOrders[0].length).setValues(allOrders);
+  
+  console.log('Структура листа Продажи:');
+  console.log('Колонка A (1): ID');
+  console.log('Колонка B (2): Количество');
+  console.log('Колонка C (3): Сумма');
+  console.log('Колонка D (4): Промокод');
+  console.log('Колонка E (5): Информация о клиенте');
+  console.log('Колонка F (6): Статус');
+  console.log('Колонка G (7): Дата продажи');
   
   console.log(`Импортировано ${allOrders.length} строк.`);
   
@@ -375,15 +405,18 @@ function calculateCommissions() {
     return { success: true, message: 'Нет продаж для обработки' };
   }
   
-  // Новая структура листа Продажи: A=ID, B=Количество, C=Дата, D=Сумма, E=Промокод, F=Инфо о клиенте, G=Статус
+  // Правильная структура листа Продажи: A=ID, B=Количество, C=Сумма, D=Промокод, E=Информация о клиенте, F=Статус, G=Дата продажи
   const salesData = salesSheet.getRange(2, 1, salesLastRow - 1, 7).getValues();
   let newAccruals = [];
 
   salesData.forEach((sale) => {
-    const saleId = String(sale[0] || '').trim();
-    const saleSum = parseFloat(sale[3]) || 0; // D - Сумма
-    const salePromo = String(sale[4] || '').trim(); // E - Промокод
-    const customerInfo = String(sale[5] || '').trim(); // F - Информация о клиенте
+    const saleId = String(sale[0] || '').trim();           // A - ID
+    const saleQuantity = parseInt(sale[1]) || 0;           // B - Количество (не используется в расчете комиссий, но доступно)
+    const saleSum = parseFloat(sale[2]) || 0;              // C - Сумма
+    const salePromo = String(sale[3] || '').trim();        // D - Промокод
+    const customerInfo = String(sale[4] || '').trim();     // E - Информация о клиенте
+    const saleStatus = String(sale[5] || '').trim();       // F - Статус
+    const saleDate = sale[6];                                // G - Дата продажи
     const cleanCustomerPhone = customerInfo.replace(/\D/g, ''); // Убираем все нецифровые символы
     const normalizedCustomerPhone = cleanCustomerPhone.length >= 7 ? cleanCustomerPhone.slice(-10) : cleanCustomerPhone;
     
