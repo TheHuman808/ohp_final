@@ -106,35 +106,47 @@ const StatsView = ({ commissions, commissionsLoading, commissionsError, currentV
   };
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return 'Не указана';
-    
-    // Если дата уже в формате дд.мм.гг (например, из Apps Script), возвращаем как есть
-    if (/^\d{2}\.\d{2}\.\d{2}$/.test(dateString.trim())) {
-      return dateString.trim();
+    if (!dateString || dateString.trim() === '') {
+      console.log('formatDate: пустая строка, возвращаем "Не указана"');
+      return 'Не указана';
     }
     
-    const date = parseDate(dateString);
+    const trimmed = dateString.trim();
+    console.log('formatDate: входная строка:', trimmed);
+    
+    // Если дата уже в формате дд.мм.гг (например, из Apps Script), возвращаем как есть
+    if (/^\d{2}\.\d{2}\.\d{2}$/.test(trimmed)) {
+      console.log('formatDate: дата уже в формате дд.мм.гг, возвращаем как есть');
+      return trimmed;
+    }
+    
+    const date = parseDate(trimmed);
     if (!date) {
       // Пытаемся распарсить другие форматы
       try {
-        const parsed = new Date(dateString);
+        const parsed = new Date(trimmed);
         if (!isNaN(parsed.getTime())) {
           const day = String(parsed.getDate()).padStart(2, '0');
           const month = String(parsed.getMonth() + 1).padStart(2, '0');
           const year = String(parsed.getFullYear()).slice(-2);
-          return `${day}.${month}.${year}`;
+          const formatted = `${day}.${month}.${year}`;
+          console.log('formatDate: распарсили через new Date, результат:', formatted);
+          return formatted;
         }
       } catch (e) {
-        // Игнорируем ошибки парсинга
+        console.error('formatDate: ошибка парсинга:', e);
       }
-      return dateString; // Возвращаем исходную строку, если не удалось распарсить
+      console.warn('formatDate: не удалось распарсить, возвращаем исходную строку');
+      return trimmed; // Возвращаем исходную строку, если не удалось распарсить
     }
     
     // Форматируем в дд.мм.гг
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = String(date.getFullYear()).slice(-2);
-    return `${day}.${month}.${year}`;
+    const formatted = `${day}.${month}.${year}`;
+    console.log('formatDate: отформатировали через parseDate, результат:', formatted);
+    return formatted;
   };
 
   const commissionsByLevel = getCommissionsByLevel();
