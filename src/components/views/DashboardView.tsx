@@ -40,6 +40,14 @@ const DashboardView = ({ partner, commissions, stats, statsLoading, network, cur
               </div>
             ) : stats ? (
               <>
+                {/* Отладочная информация */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                    <p>Stats debug: totalIncome={stats.totalIncome}, partnersCount={stats.partnersCount}, uniqueSalesCount={stats.uniqueSalesCount}</p>
+                    <p>Network: level1={network?.level1?.length || 0}, level2={network?.level2?.length || 0}, level3={network?.level3?.length || 0}, level4={network?.level4?.length || 0}</p>
+                  </div>
+                )}
+                
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div className="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm">
                     <TrendingUp className="w-8 h-8 text-green-600" />
@@ -53,7 +61,7 @@ const DashboardView = ({ partner, commissions, stats, statsLoading, network, cur
                     <Users className="w-8 h-8 text-blue-600" />
                     <div>
                       <p className="text-sm text-gray-600">Партнеры</p>
-                      <p className="text-xl font-bold">{stats.partnersCount}</p>
+                      <p className="text-xl font-bold">{stats.partnersCount || 0}</p>
                     </div>
                   </div>
                   
@@ -61,7 +69,7 @@ const DashboardView = ({ partner, commissions, stats, statsLoading, network, cur
                     <Share2 className="w-8 h-8 text-purple-600" />
                     <div>
                       <p className="text-sm text-gray-600">Продажи</p>
-                      <p className="text-xl font-bold">{stats.uniqueSalesCount}</p>
+                      <p className="text-xl font-bold">{stats.uniqueSalesCount || 0}</p>
                     </div>
                   </div>
                 </div>
