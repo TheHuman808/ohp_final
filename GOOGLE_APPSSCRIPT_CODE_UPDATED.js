@@ -215,17 +215,37 @@ function importOrdersToSalesSheet() {
     
     const str = String(productNameQty).trim();
     console.log('extractQuantity: входная строка:', str);
+    console.log('extractQuantity: тип данных:', typeof productNameQty);
+    console.log('extractQuantity: длина строки:', str.length);
     
     // Ищем паттерн (число) в первой паре скобок
     // Пример: "Инуловит(1)()" -> извлекаем "1"
-    const match = str.match(/\((\d+)\)/);
-    if (match && match[1]) {
-      const quantity = parseInt(match[1], 10) || 0;
-      console.log('extractQuantity: извлечено количество:', quantity);
+    // Используем глобальный поиск и берем первое совпадение
+    const matches = str.match(/\((\d+)\)/g);
+    console.log('extractQuantity: все совпадения:', matches);
+    
+    if (matches && matches.length > 0) {
+      // Берем первое совпадение и извлекаем число
+      const firstMatch = matches[0];
+      console.log('extractQuantity: первое совпадение:', firstMatch);
+      const numberMatch = firstMatch.match(/\d+/);
+      if (numberMatch && numberMatch[0]) {
+        const quantity = parseInt(numberMatch[0], 10) || 0;
+        console.log('extractQuantity: извлечено количество:', quantity);
+        return quantity;
+      }
+    }
+    
+    // Альтернативный способ: ищем любую пару скобок с числом внутри
+    const altMatch = str.match(/\((\d+)\)/);
+    if (altMatch && altMatch[1]) {
+      const quantity = parseInt(altMatch[1], 10) || 0;
+      console.log('extractQuantity (альтернативный способ): извлечено количество:', quantity);
       return quantity;
     }
     
     console.log('extractQuantity: количество не найдено, возвращаем 0');
+    console.log('extractQuantity: строка для анализа:', JSON.stringify(str));
     return 0;
   }
 
@@ -252,8 +272,13 @@ function importOrdersToSalesSheet() {
       const noteVal = row[FIELD_INDICES.COL_NOTE - 1];
       const productNameQty = row[FIELD_INDICES.PRODUCT_NAME_QTY - 1]; // Q - Product name(QTY)(SKU)
       
+      console.log(`Processing order ${orderId}:`);
+      console.log('  Product name(QTY)(SKU):', productNameQty);
+      console.log('  Product name(QTY)(SKU) type:', typeof productNameQty);
+      
       // Извлекаем количество из Product name(QTY)(SKU)
       const quantity = extractQuantity(productNameQty);
+      console.log(`  Extracted quantity for order ${orderId}:`, quantity);
       
       // Правильная структура: ID, Количество, Сумма, Промокод, Информация о клиенте, Статус, Дата продажи
       return [
