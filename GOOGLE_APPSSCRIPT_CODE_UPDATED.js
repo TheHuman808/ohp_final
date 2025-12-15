@@ -910,6 +910,18 @@ function getPartnerCommissions(telegramId) {
     });
     
     console.log(`Returning ${commissions.length} commissions for partner ${telegramId}`);
+    
+    // Проверяем, что saleDate правильно добавлен
+    if (commissions.length > 0) {
+      console.log('Sample commission with saleDate:', {
+        id: commissions[0].id,
+        saleId: commissions[0].saleId,
+        saleDate: commissions[0].saleDate,
+        date: commissions[0].date
+      });
+      console.log('Commissions with saleDate count:', commissions.filter(c => c.saleDate && c.saleDate.trim() !== '').length);
+    }
+    
     console.log('=== GET PARTNER COMMISSIONS END ===');
     
     return { success: true, commissions };

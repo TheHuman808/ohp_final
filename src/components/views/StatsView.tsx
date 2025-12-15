@@ -25,6 +25,8 @@ const StatsView = ({ commissions, commissionsLoading, commissionsError, currentV
   console.log('StatsView - commissionsLoading:', commissionsLoading);
   console.log('StatsView - commissions count:', commissions?.length || 0);
   console.log('StatsView - first commission:', commissions?.[0]);
+  console.log('StatsView - first commission saleDate:', commissions?.[0]?.saleDate);
+  console.log('StatsView - commissions with saleDate:', commissions?.filter(c => c.saleDate).length);
 
   // Функция для парсинга даты из формата DD.MM.YYYY
   const parseDate = (dateString: string): Date | null => {

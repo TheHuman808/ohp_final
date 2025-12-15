@@ -188,6 +188,8 @@ class GoogleSheetsService {
               
           // Маппим данные из Apps Script в формат CommissionRecord
           const mappedCommissions: CommissionRecord[] = commissionsData.map((comm: any, index: number) => {
+            const saleDateValue = comm.saleDate ? String(comm.saleDate).trim() : undefined;
+            
             const mapped = {
               id: String(comm.id || '').trim(),
               saleId: String(comm.saleId || '').trim(),
@@ -196,11 +198,16 @@ class GoogleSheetsService {
               amount: parseFloat(String(comm.amount || '0')) || 0,
               commission: parseFloat(String(comm.commission || '0')) || 0, // Процент
               date: String(comm.date || '').trim(), // Дата расчета
-              saleDate: comm.saleDate ? String(comm.saleDate).trim() : undefined // Дата продажи
+              saleDate: saleDateValue // Дата продажи
             };
             
             if (index < 3) {
-              console.log(`Mapping commission ${index}:`, { original: comm, mapped });
+              console.log(`Mapping commission ${index}:`, { 
+                original: comm, 
+                mapped,
+                originalSaleDate: comm.saleDate,
+                mappedSaleDate: saleDateValue
+              });
             }
             
             return mapped;
