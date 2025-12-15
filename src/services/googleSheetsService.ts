@@ -275,6 +275,50 @@ class GoogleSheetsService {
       
       console.log('Commissions data rows count:', commissions.length);
       
+      // Получаем даты продаж из листа "Продажи"
+      let salesDatesMap: { [key: string]: string } = {};
+      try {
+        const salesUrl = `${this.baseUrl}/${this.spreadsheetId}/values/Продажи!A:G?key=${this.apiKey}`;
+        console.log('Fetching sales data for sale dates:', salesUrl);
+        const salesResponse = await fetch(salesUrl);
+        
+        if (salesResponse.ok) {
+          const salesData = await salesResponse.json();
+          if (salesData.values && salesData.values.length > 1) {
+            // Структура листа Продажи: A=ID, B=Количество, C=Сумма, D=Промокод, E=Информация о клиенте, F=Статус, G=Дата продажи
+            const salesRows = salesData.values.slice(1);
+            salesRows.forEach((saleRow: any[]) => {
+              const saleId = String(saleRow[0] || '').trim();
+              const saleDate = saleRow[6]; // Колонка G - Дата продажи
+              
+              if (saleId && saleDate) {
+                // Форматируем дату в формат дд.мм.гг
+                let formattedDate = '';
+                try {
+                  const dateObj = saleDate instanceof Date ? saleDate : new Date(saleDate);
+                  if (!isNaN(dateObj.getTime())) {
+                    const day = String(dateObj.getDate()).padStart(2, '0');
+                    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const year = String(dateObj.getFullYear()).slice(-2);
+                    formattedDate = `${day}.${month}.${year}`;
+                  } else {
+                    formattedDate = String(saleDate);
+                  }
+                } catch (e) {
+                  formattedDate = String(saleDate);
+                }
+                salesDatesMap[saleId] = formattedDate;
+              }
+            });
+            console.log(`Loaded ${Object.keys(salesDatesMap).length} sale dates from Продажи sheet`);
+          }
+        } else {
+          console.warn('Failed to fetch sales data for sale dates:', salesResponse.status);
+        }
+      } catch (salesError) {
+        console.warn('Error fetching sales data for sale dates:', salesError);
+      }
+      
       // Структура листа "Начисления": 
       // A - ID, B - ID продажи, C - Telegram ID партнера, D - Уровень, E - Сумма, F - Процент, G - Дата расчета
       const searchTgId = String(telegramId || '').trim();
@@ -303,17 +347,24 @@ class GoogleSheetsService {
           }
           return match;
         })
-        .map(row => ({
-          id: String(row[0] || '').trim(),
-          saleId: String(row[1] || '').trim(),
-          partnerTelegramId: String(row[2] || '').trim(),
-          level: parseInt(row[3]) || 1,
-          amount: parseFloat(row[4]) || 0, // Сумма
-          commission: parseFloat(row[5]) || 0, // Процент
-          date: String(row[6] || '').trim() // Дата расчета
-        }));
+        .map(row => {
+          const saleId = String(row[1] || '').trim();
+          const saleDate = salesDatesMap[saleId] || undefined;
+          
+          return {
+            id: String(row[0] || '').trim(),
+            saleId: saleId,
+            partnerTelegramId: String(row[2] || '').trim(),
+            level: parseInt(row[3]) || 1,
+            amount: parseFloat(row[4]) || 0, // Сумма
+            commission: parseFloat(row[5]) || 0, // Процент
+            date: String(row[6] || '').trim(), // Дата расчета
+            saleDate: saleDate // Дата продажи
+          };
+        });
       
       console.log(`Filtered ${partnerCommissions.length} commissions for Telegram ID ${searchTgId}`);
+      console.log(`Commissions with saleDate: ${partnerCommissions.filter(c => c.saleDate).length}`);
       
       console.log(`Found ${partnerCommissions.length} commissions for partner ${telegramId}`);
       console.log('Sample commissions:', partnerCommissions.slice(0, 3));
