@@ -206,15 +206,26 @@ function importOrdersToSalesSheet() {
   };
 
   // Функция для извлечения количества из строки вида "Инуловит(1)()"
+  // Извлекает число из первой пары скобок
   function extractQuantity(productNameQty) {
-    if (!productNameQty) return 0;
+    if (!productNameQty) {
+      console.log('extractQuantity: пустое значение');
+      return 0;
+    }
     
     const str = String(productNameQty).trim();
-    // Ищем паттерн (число) в скобках
+    console.log('extractQuantity: входная строка:', str);
+    
+    // Ищем паттерн (число) в первой паре скобок
+    // Пример: "Инуловит(1)()" -> извлекаем "1"
     const match = str.match(/\((\d+)\)/);
     if (match && match[1]) {
-      return parseInt(match[1], 10) || 0;
+      const quantity = parseInt(match[1], 10) || 0;
+      console.log('extractQuantity: извлечено количество:', quantity);
+      return quantity;
     }
+    
+    console.log('extractQuantity: количество не найдено, возвращаем 0');
     return 0;
   }
 
@@ -1046,4 +1057,29 @@ function setupSalesCountUpdateTrigger() {
   
   console.log('Created new trigger for updatePartnersSalesCount (every 1 minute)');
   return { success: true, message: 'Триггер настроен на обновление каждую минуту' };
+}
+
+// ==========================================
+// ФУНКЦИЯ: НАСТРОЙКА ТРИГГЕРА ДЛЯ АВТОМАТИЧЕСКОГО ИМПОРТА ЗАКАЗОВ
+// ==========================================
+
+function setupImportOrdersTrigger() {
+  // Удаляем существующие триггеры для этой функции
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'importOrdersToSalesSheet') {
+      ScriptApp.deleteTrigger(trigger);
+      console.log('Deleted existing import orders trigger');
+    }
+  });
+  
+  // Создаем новый триггер на каждую минуту
+  ScriptApp.newTrigger('importOrdersToSalesSheet')
+    .timeBased()
+    .everyMinutes(1)
+    .create();
+  
+  console.log('Created new trigger for importOrdersToSalesSheet (every 1 minute)');
+  
+  return { success: true, message: 'Триггер успешно настроен для импорта заказов каждую минуту' };
 }
