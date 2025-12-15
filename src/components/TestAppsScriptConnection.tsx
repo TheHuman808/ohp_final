@@ -16,7 +16,7 @@ const TestAppsScriptConnection = () => {
   const envApiKey = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY;
 
   // Fallback значения из googleSheetsService
-  const fallbackWebAppUrl = 'https://script.google.com/macros/s/AKfycbwm_KRe093XSMbjHohkcq0yitAi5arBxJGgL6mT34Ca9Z2zVj_M1SbP5wQ1gBBeU0tP/exec';
+  const fallbackWebAppUrl = 'https://script.google.com/macros/s/AKfycbw24T-bvBAIP7ZfPtspEkntTjiT6OyC_hcHRQ4U94pNk_vtslu_e-NZctIuPRe21IPI/exec';
   const fallbackSheetsId = '1fh4-V4n0ho-RF06xcxl0JYxK5xQf8WOMSYy-tF6vRkU';
   const fallbackApiKey = 'AIzaSyD1-O9ID7-2EFVum1ITNRyrhJYtvlY5wKg';
 
