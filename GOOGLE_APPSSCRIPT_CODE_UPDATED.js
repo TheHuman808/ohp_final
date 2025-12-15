@@ -832,28 +832,55 @@ function getPartnerCommissions(telegramId) {
           if (saleId) {
             let formattedDate = '';
             if (saleDate) {
+              let dateObj = null;
+              
               if (saleDate instanceof Date) {
-                // Форматируем дату в формат дд.мм.гг (например, 14.12.25)
-                const day = String(saleDate.getDate()).padStart(2, '0');
-                const month = String(saleDate.getMonth() + 1).padStart(2, '0');
-                const year = String(saleDate.getFullYear()).slice(-2); // Последние 2 цифры года
-                formattedDate = `${day}.${month}.${year}`;
+                // Если это уже объект Date
+                dateObj = saleDate;
               } else {
                 // Если это строка, пытаемся распарсить
-                const dateStr = String(saleDate);
+                const dateStr = String(saleDate).trim();
+                console.log(`Parsing date string: "${dateStr}"`);
+                
                 try {
-                  const parsedDate = new Date(dateStr);
-                  if (!isNaN(parsedDate.getTime())) {
-                    const day = String(parsedDate.getDate()).padStart(2, '0');
-                    const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
-                    const year = String(parsedDate.getFullYear()).slice(-2);
-                    formattedDate = `${day}.${month}.${year}`;
-                  } else {
-                    formattedDate = dateStr; // Оставляем как есть, если не удалось распарсить
+                  // Пробуем стандартный парсинг Date
+                  dateObj = new Date(dateStr);
+                  
+                  // Проверяем, что дата валидна
+                  if (isNaN(dateObj.getTime())) {
+                    console.warn(`Failed to parse date: "${dateStr}"`);
+                    // Пробуем альтернативные форматы
+                    // Формат: "December 14, 2025 5:58 am"
+                    const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 
+                                      'july', 'august', 'september', 'october', 'november', 'december'];
+                    const dateMatch = dateStr.match(/(\w+)\s+(\d+),\s+(\d+)/i);
+                    if (dateMatch) {
+                      const monthName = dateMatch[1].toLowerCase();
+                      const day = parseInt(dateMatch[2]);
+                      const year = parseInt(dateMatch[3]);
+                      const monthIndex = monthNames.indexOf(monthName);
+                      if (monthIndex !== -1) {
+                        dateObj = new Date(year, monthIndex, day);
+                        console.log(`Parsed date using month name: ${day}.${monthIndex + 1}.${year}`);
+                      }
+                    }
                   }
                 } catch (e) {
-                  formattedDate = dateStr;
+                  console.error(`Error parsing date: "${dateStr}", error:`, e);
                 }
+              }
+              
+              // Форматируем дату в формат дд.мм.гг (например, 14.12.25)
+              if (dateObj && !isNaN(dateObj.getTime())) {
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const year = String(dateObj.getFullYear()).slice(-2); // Последние 2 цифры года
+                formattedDate = `${day}.${month}.${year}`;
+                console.log(`Formatted date: "${formattedDate}" from original: "${saleDate}"`);
+              } else {
+                // Если не удалось распарсить, оставляем как есть
+                formattedDate = String(saleDate);
+                console.warn(`Could not format date, keeping original: "${formattedDate}"`);
               }
             }
             salesDatesMap[saleId] = formattedDate;
