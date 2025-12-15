@@ -512,32 +512,51 @@ class GoogleSheetsService {
           console.log('Level 3 count:', networkData.level3?.length || 0);
           console.log('Level 4 count:', networkData.level4?.length || 0);
           
-          // Маппим данные из Apps Script в формат PartnerRecord
-          const mapPartner = (partner: any): PartnerRecord => ({
-            id: String(partner.id || ''),
-            telegramId: String(partner.telegramId || '').trim(),
-            firstName: String(partner.firstName || '').trim(),
-            lastName: String(partner.lastName || '').trim(),
-            phone: String(partner.phone || '').trim(),
-            email: String(partner.email || '').trim(),
-            username: partner.username ? String(partner.username).trim() : undefined,
-            promoCode: String(partner.promoCode || '').trim(),
-            inviterCode: partner.inviterCode ? String(partner.inviterCode).trim() : undefined,
-            inviterTelegramId: partner.inviterTelegramId ? String(partner.inviterTelegramId).trim() : undefined,
-            registrationDate: String(partner.registrationDate || '').trim(),
-            totalEarnings: parseFloat(partner.totalEarnings) || 0,
-            salesCount: parseInt(partner.salesCount) || 0
-          });
+          // Маппим данные из Apps Script в формат PartnerRecord с обработкой ошибок
+          const mapPartner = (partner: any, index: number): PartnerRecord | null => {
+            try {
+              if (!partner) {
+                console.warn(`Partner at index ${index} is null or undefined`);
+                return null;
+              }
+              
+              const mapped: PartnerRecord = {
+                id: String(partner.id || ''),
+                telegramId: String(partner.telegramId || '').trim(),
+                firstName: String(partner.firstName || '').trim(),
+                lastName: String(partner.lastName || '').trim(),
+                phone: String(partner.phone || '').trim(),
+                email: String(partner.email || '').trim(),
+                username: partner.username ? String(partner.username).trim() : undefined,
+                promoCode: String(partner.promoCode || '').trim(),
+                inviterCode: partner.inviterCode ? String(partner.inviterCode).trim() : undefined,
+                inviterTelegramId: partner.inviterTelegramId ? String(partner.inviterTelegramId).trim() : undefined,
+                registrationDate: String(partner.registrationDate || '').trim(),
+                totalEarnings: parseFloat(String(partner.totalEarnings || '0')) || 0,
+                salesCount: parseInt(String(partner.salesCount || '0')) || 0
+              };
+              
+              if (index < 3) {
+                console.log(`Mapped partner ${index}:`, mapped);
+              }
+              
+              return mapped;
+            } catch (error) {
+              console.error(`Error mapping partner at index ${index}:`, error, partner);
+              return null;
+            }
+          };
           
           const network: NetworkData = {
-            level1: (networkData.level1 || []).map(mapPartner),
-            level2: (networkData.level2 || []).map(mapPartner),
-            level3: (networkData.level3 || []).map(mapPartner),
-            level4: (networkData.level4 || []).map(mapPartner)
+            level1: (networkData.level1 || []).map((p: any, i: number) => mapPartner(p, i)).filter((p: PartnerRecord | null): p is PartnerRecord => p !== null),
+            level2: (networkData.level2 || []).map((p: any, i: number) => mapPartner(p, i)).filter((p: PartnerRecord | null): p is PartnerRecord => p !== null),
+            level3: (networkData.level3 || []).map((p: any, i: number) => mapPartner(p, i)).filter((p: PartnerRecord | null): p is PartnerRecord => p !== null),
+            level4: (networkData.level4 || []).map((p: any, i: number) => mapPartner(p, i)).filter((p: PartnerRecord | null): p is PartnerRecord => p !== null)
           };
           
           console.log('Mapped network data:', network);
           console.log(`Level 1: ${network.level1.length}, Level 2: ${network.level2.length}, Level 3: ${network.level3.length}, Level 4: ${network.level4.length}`);
+          console.log('Sample level 1 partners:', network.level1.slice(0, 2));
           console.log('=== GET PARTNER NETWORK END ===');
           return network;
         } else {
