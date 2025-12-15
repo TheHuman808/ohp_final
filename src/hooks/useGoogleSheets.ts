@@ -256,10 +256,23 @@ export const usePartnerStats = (telegramId: string, network?: NetworkData) => {
       
       console.log('=== FETCHING PARTNER STATS ===');
       console.log('Telegram ID:', telegramId);
+      console.log('Network provided:', !!network);
+      console.log('Network data:', network);
+      console.log('Network level counts:', {
+        level1: network?.level1?.length || 0,
+        level2: network?.level2?.length || 0,
+        level3: network?.level3?.length || 0,
+        level4: network?.level4?.length || 0
+      });
       
       const statsData = await googleSheetsService.getPartnerStats(telegramId, network);
       
+      console.log('=== STATS DATA RECEIVED ===');
       console.log('Partner stats:', statsData);
+      console.log('Partners count in stats:', statsData.partnersCount);
+      console.log('Total income in stats:', statsData.totalIncome);
+      console.log('Unique sales count in stats:', statsData.uniqueSalesCount);
+      
       setStats(statsData);
     } catch (err) {
       console.error('Error fetching partner stats:', err);
