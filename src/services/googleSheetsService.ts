@@ -151,9 +151,12 @@ class GoogleSheetsService {
       console.log('Full result:', JSON.stringify(result, null, 2));
       
       if (result.success && result.result) {
+        console.log('Result.result type:', typeof result.result);
         console.log('Result.result:', result.result);
         console.log('Result.result.success:', result.result.success);
         console.log('Result.result.commissions:', result.result.commissions);
+        console.log('Result.result.commissions type:', typeof result.result.commissions);
+        console.log('Result.result.commissions isArray:', Array.isArray(result.result.commissions));
         
         // Apps Script возвращает { success: true, commissions: [...] }
         let commissionsData = null;
@@ -161,38 +164,66 @@ class GoogleSheetsService {
         // Вариант 1: result.result = { success: true, commissions: [...] }
         if (result.result.commissions && Array.isArray(result.result.commissions)) {
           commissionsData = result.result.commissions;
-          console.log('Using result.result.commissions');
+          console.log('✅ Using result.result.commissions, count:', commissionsData.length);
         }
         // Вариант 2: result.result = [...] напрямую
         else if (Array.isArray(result.result)) {
           commissionsData = result.result;
-          console.log('Using result.result directly as array');
+          console.log('✅ Using result.result directly as array, count:', commissionsData.length);
+        }
+        // Вариант 3: result.result.success = true, но структура другая
+        else if (result.result.success === true && result.result.commissions) {
+          commissionsData = result.result.commissions;
+          console.log('✅ Using result.result.commissions (nested), count:', Array.isArray(commissionsData) ? commissionsData.length : 'not array');
         }
         
-        if (commissionsData && commissionsData.length > 0) {
-          console.log('Commissions data from Apps Script:', commissionsData);
-          console.log('Commissions count:', commissionsData.length);
-          console.log('Sample commission:', commissionsData[0]);
-          
-          // Маппим данные из Apps Script в формат CommissionRecord
-          const mappedCommissions: CommissionRecord[] = commissionsData.map((comm: any) => ({
-            id: String(comm.id || '').trim(),
-            saleId: String(comm.saleId || '').trim(),
-            partnerTelegramId: String(comm.partnerTelegramId || '').trim(),
-            level: parseInt(comm.level) || 1,
-            amount: parseFloat(comm.amount) || 0,
-            commission: parseFloat(comm.commission) || 0, // Процент
-            date: String(comm.date || '').trim()
-          }));
-          
-          console.log('Mapped commissions:', mappedCommissions);
-          console.log('=== GET PARTNER COMMISSIONS END ===');
-          return mappedCommissions;
+        if (commissionsData) {
+          if (Array.isArray(commissionsData)) {
+            if (commissionsData.length > 0) {
+              console.log('✅ Commissions data from Apps Script:', commissionsData);
+              console.log('✅ Commissions count:', commissionsData.length);
+              console.log('✅ Sample commission:', commissionsData[0]);
+              console.log('✅ Sample commission keys:', Object.keys(commissionsData[0] || {}));
+              
+              // Маппим данные из Apps Script в формат CommissionRecord
+              const mappedCommissions: CommissionRecord[] = commissionsData.map((comm: any, index: number) => {
+                const mapped = {
+                  id: String(comm.id || '').trim(),
+                  saleId: String(comm.saleId || '').trim(),
+                  partnerTelegramId: String(comm.partnerTelegramId || '').trim(),
+                  level: parseInt(String(comm.level || '1')) || 1,
+                  amount: parseFloat(String(comm.amount || '0')) || 0,
+                  commission: parseFloat(String(comm.commission || '0')) || 0, // Процент
+                  date: String(comm.date || '').trim()
+                };
+                
+                if (index < 3) {
+                  console.log(`Mapping commission ${index}:`, { original: comm, mapped });
+                }
+                
+                return mapped;
+              });
+              
+              console.log('✅ Mapped commissions:', mappedCommissions);
+              console.log('✅ Mapped commissions count:', mappedCommissions.length);
+              console.log('=== GET PARTNER COMMISSIONS END (SUCCESS) ===');
+              return mappedCommissions;
+            } else {
+              console.warn('⚠️ Apps Script returned empty commissions array');
+              return [];
+            }
+          } else {
+            console.warn('⚠️ Apps Script returned commissions but it is not an array:', typeof commissionsData, commissionsData);
+          }
         } else {
-          console.warn('Apps Script returned data but commissions array is empty or invalid');
+          console.warn('⚠️ Apps Script returned data but commissionsData is null/undefined');
+          console.warn('Result.result structure:', JSON.stringify(result.result, null, 2));
         }
       } else {
-        console.warn('Apps Script request failed or returned invalid data:', result);
+        console.warn('❌ Apps Script request failed or returned invalid data:', result);
+        console.warn('Result.success:', result.success);
+        console.warn('Result.result:', result.result);
+        console.warn('Result.error:', result.error);
       }
       
       // Fallback: читаем напрямую из Google Sheets API

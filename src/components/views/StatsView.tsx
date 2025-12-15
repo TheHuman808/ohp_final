@@ -221,21 +221,24 @@ const StatsView = ({ commissions, commissionsLoading, currentView, onViewChange,
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredCommissions.map((commission) => (
-                      <TableRow key={commission.id}>
-                        <TableCell>{formatDate(commission.date)}</TableCell>
-                        <TableCell className="font-semibold text-green-600">
-                          ₽{(commission.amount || 0).toLocaleString('ru-RU')}
-                        </TableCell>
-                        <TableCell>
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                            Уровень {commission.level || 1}
-                          </span>
-                        </TableCell>
-                        <TableCell>{((commission.commission || 0) * 100).toFixed(1)}%</TableCell>
-                        <TableCell className="text-xs text-gray-500">{commission.saleId || 'N/A'}</TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredCommissions.map((commission, index) => {
+                      console.log(`Rendering commission ${index}:`, commission);
+                      return (
+                        <TableRow key={commission.id || `commission-${index}`}>
+                          <TableCell>{formatDate(commission.date)}</TableCell>
+                          <TableCell className="font-semibold text-green-600">
+                            ₽{(commission.amount || 0).toLocaleString('ru-RU')}
+                          </TableCell>
+                          <TableCell>
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                              Уровень {commission.level || 1}
+                            </span>
+                          </TableCell>
+                          <TableCell>{((commission.commission || 0) * 100).toFixed(1)}%</TableCell>
+                          <TableCell className="text-xs text-gray-500">{commission.saleId || 'N/A'}</TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -247,6 +250,17 @@ const StatsView = ({ commissions, commissionsLoading, currentView, onViewChange,
                 <p className="text-sm text-gray-500 mt-2">
                   Начисления появятся после продаж по вашему промокоду
                 </p>
+                {/* Отладочная информация */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-left">
+                    <p><strong>Отладка:</strong></p>
+                    <p>Всего commissions: {commissions.length}</p>
+                    <p>Отфильтровано: {filteredCommissions.length}</p>
+                    <p>Выбранный месяц: {selectedMonth}</p>
+                    <p>Loading: {commissionsLoading ? 'да' : 'нет'}</p>
+                    <p>Первая commission: {JSON.stringify(commissions[0] || 'нет данных')}</p>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
