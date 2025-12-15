@@ -64,7 +64,7 @@ function doPost(e) {
 
 function handleRequest(e) {
   try {
-    let result = { success: false, error: 'No action specified' };
+    let result = { success: true, message: 'Google Apps Script is working' };
     
     // Обработка POST запросов
     if (e.postData && e.postData.contents) {
@@ -105,14 +105,16 @@ function handleRequest(e) {
         default:
           result = { success: false, error: 'Unknown action: ' + action };
       }
-    } else if (e.parameter) {
+    } else if (e && e.parameter) {
       // Обработка GET запросов с параметрами
       const action = e.parameter.action;
       const dataParam = e.parameter.data;
       
       console.log('GET request - action:', action);
+      console.log('GET request - parameters:', e.parameter);
       
       if (!action) {
+        // GET запрос без action - просто проверка работоспособности
         result = { success: true, message: 'Google Apps Script is working' };
       } else {
         let data = {};
