@@ -3,16 +3,20 @@
 // ==========================================
 
 function doGet(e) {
-  // Проверяем и настраиваем триггеры при первом запуске
-  ensureSalesCountUpdateTrigger();
-  ensureImportOrdersTrigger();
+  // Примечание: Триггеры нельзя создавать автоматически через веб-приложение
+  // из-за ограничений авторизации. Триггеры должны быть созданы вручную:
+  // 1. Запустите функцию setupSalesCountUpdateTrigger() вручную один раз
+  // 2. Запустите функцию setupImportOrdersTrigger() вручную один раз
+  // Или создайте триггеры через меню: Триггеры -> Добавить триггер
   return handleRequest(e);
 }
 
 function doPost(e) {
-  // Проверяем и настраиваем триггеры при первом запуске
-  ensureSalesCountUpdateTrigger();
-  ensureImportOrdersTrigger();
+  // Примечание: Триггеры нельзя создавать автоматически через веб-приложение
+  // из-за ограничений авторизации. Триггеры должны быть созданы вручную:
+  // 1. Запустите функцию setupSalesCountUpdateTrigger() вручную один раз
+  // 2. Запустите функцию setupImportOrdersTrigger() вручную один раз
+  // Или создайте триггеры через меню: Триггеры -> Добавить триггер
   return handleRequest(e);
 }
 
@@ -20,37 +24,43 @@ function doPost(e) {
 // ФУНКЦИЯ: ПРОВЕРКА И НАСТРОЙКА ТРИГГЕРА (АВТОМАТИЧЕСКИ)
 // ==========================================
 
-function ensureSalesCountUpdateTrigger() {
-  try {
-    const triggers = ScriptApp.getProjectTriggers();
-    const hasTrigger = triggers.some(trigger => 
-      trigger.getHandlerFunction() === 'updatePartnersSalesCount'
-    );
-    
-    if (!hasTrigger) {
-      console.log('Триггер не найден, создаем новый...');
-      setupSalesCountUpdateTrigger();
-    }
-  } catch (error) {
-    console.error('Ошибка при проверке триггера:', error);
-  }
-}
+// ==========================================
+// ФУНКЦИИ ДЛЯ ПРОВЕРКИ ТРИГГЕРОВ (ОТКЛЮЧЕНЫ ИЗ-ЗА ОГРАНИЧЕНИЙ АВТОРИЗАЦИИ)
+// ==========================================
+// Эти функции требуют авторизации и не могут быть вызваны через веб-приложение.
+// Используйте setupSalesCountUpdateTrigger() и setupImportOrdersTrigger() вручную.
 
-function ensureImportOrdersTrigger() {
-  try {
-    const triggers = ScriptApp.getProjectTriggers();
-    const hasTrigger = triggers.some(trigger => 
-      trigger.getHandlerFunction() === 'importOrdersToSalesSheet'
-    );
-    
-    if (!hasTrigger) {
-      console.log('Триггер для импорта заказов не найден, создаем новый...');
-      setupImportOrdersTrigger();
-    }
-  } catch (error) {
-    console.error('Ошибка при проверке триггера импорта заказов:', error);
-  }
-}
+// function ensureSalesCountUpdateTrigger() {
+//   try {
+//     const triggers = ScriptApp.getProjectTriggers();
+//     const hasTrigger = triggers.some(trigger => 
+//       trigger.getHandlerFunction() === 'updatePartnersSalesCount'
+//     );
+//     
+//     if (!hasTrigger) {
+//       console.log('Триггер не найден, создаем новый...');
+//       setupSalesCountUpdateTrigger();
+//     }
+//   } catch (error) {
+//     console.error('Ошибка при проверке триггера:', error);
+//   }
+// }
+
+// function ensureImportOrdersTrigger() {
+//   try {
+//     const triggers = ScriptApp.getProjectTriggers();
+//     const hasTrigger = triggers.some(trigger => 
+//       trigger.getHandlerFunction() === 'importOrdersToSalesSheet'
+//     );
+//     
+//     if (!hasTrigger) {
+//       console.log('Триггер для импорта заказов не найден, создаем новый...');
+//       setupImportOrdersTrigger();
+//     }
+//   } catch (error) {
+//     console.error('Ошибка при проверке триггера импорта заказов:', error);
+//   }
+// }
 
 function handleRequest(e) {
   try {
@@ -1122,24 +1132,44 @@ function setupSalesCountUpdateTrigger() {
 // ==========================================
 // ФУНКЦИЯ: НАСТРОЙКА ТРИГГЕРА ДЛЯ АВТОМАТИЧЕСКОГО ИМПОРТА ЗАКАЗОВ
 // ==========================================
+// ВАЖНО: Эта функция должна быть запущена ВРУЧНУЮ один раз в редакторе Apps Script
+// для создания триггера. Триггеры нельзя создавать автоматически через веб-приложение.
+//
+// Инструкция:
+// 1. Откройте редактор Apps Script
+// 2. Выберите функцию setupImportOrdersTrigger в выпадающем списке
+// 3. Нажмите "Выполнить"
+// 4. Разрешите доступ при запросе авторизации
+//
+// Альтернативный способ:
+// 1. Перейдите в меню: Триггеры -> Добавить триггер
+// 2. Выберите функцию: importOrdersToSalesSheet
+// 3. Выберите источник события: По времени
+// 4. Выберите тип события: Минутный таймер
+// 5. Выберите интервал: Каждую минуту
 
 function setupImportOrdersTrigger() {
-  // Удаляем существующие триггеры для этой функции
-  const triggers = ScriptApp.getProjectTriggers();
-  triggers.forEach(trigger => {
-    if (trigger.getHandlerFunction() === 'importOrdersToSalesSheet') {
-      ScriptApp.deleteTrigger(trigger);
-      console.log('Deleted existing import orders trigger');
-    }
-  });
-  
-  // Создаем новый триггер на каждую минуту
-  ScriptApp.newTrigger('importOrdersToSalesSheet')
-    .timeBased()
-    .everyMinutes(1)
-    .create();
-  
-  console.log('Created new trigger for importOrdersToSalesSheet (every 1 minute)');
-  
-  return { success: true, message: 'Триггер успешно настроен для импорта заказов каждую минуту' };
+  try {
+    // Удаляем существующие триггеры для этой функции
+    const triggers = ScriptApp.getProjectTriggers();
+    triggers.forEach(trigger => {
+      if (trigger.getHandlerFunction() === 'importOrdersToSalesSheet') {
+        ScriptApp.deleteTrigger(trigger);
+        console.log('Deleted existing import orders trigger');
+      }
+    });
+    
+    // Создаем новый триггер на каждую минуту
+    ScriptApp.newTrigger('importOrdersToSalesSheet')
+      .timeBased()
+      .everyMinutes(1)
+      .create();
+    
+    console.log('Created new trigger for importOrdersToSalesSheet (every 1 minute)');
+    
+    return { success: true, message: 'Триггер успешно настроен для импорта заказов каждую минуту' };
+  } catch (error) {
+    console.error('Error setting up import orders trigger:', error);
+    return { success: false, error: 'Ошибка при создании триггера: ' + error.toString() };
+  }
 }
