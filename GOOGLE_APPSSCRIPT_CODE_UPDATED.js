@@ -770,39 +770,28 @@ function getPartnerNetwork(telegramId) {
       level4.push(...level4Partners);
     });
     
+    // Маппим все поля партнера для полной информации
+    const mapPartner = (row) => ({
+      id: String(row[0] || ''),
+      telegramId: String(row[1] || '').trim(),
+      firstName: String(row[2] || '').trim(),
+      lastName: String(row[3] || '').trim(),
+      phone: String(row[4] || '').trim(),
+      email: String(row[5] || '').trim(),
+      username: row[6] ? String(row[6]).trim() : undefined,
+      promoCode: String(row[7] || '').trim(),
+      inviterCode: row[8] ? String(row[8]).trim() : undefined,
+      inviterTelegramId: row[9] ? String(row[9]).trim() : undefined,
+      registrationDate: String(row[10] || '').trim(),
+      totalEarnings: parseFloat(row[11]) || 0,
+      salesCount: parseInt(row[12]) || 0
+    });
+    
     const network = {
-      level1: level1.map(row => ({
-        id: row[0],
-        telegramId: String(row[1] || '').trim(),
-        firstName: String(row[2] || '').trim(),
-        lastName: String(row[3] || '').trim(),
-        promoCode: String(row[7] || '').trim(),
-        registrationDate: String(row[10] || '').trim()
-      })),
-      level2: level2.map(row => ({
-        id: row[0],
-        telegramId: String(row[1] || '').trim(),
-        firstName: String(row[2] || '').trim(),
-        lastName: String(row[3] || '').trim(),
-        promoCode: String(row[7] || '').trim(),
-        registrationDate: String(row[10] || '').trim()
-      })),
-      level3: level3.map(row => ({
-        id: row[0],
-        telegramId: String(row[1] || '').trim(),
-        firstName: String(row[2] || '').trim(),
-        lastName: String(row[3] || '').trim(),
-        promoCode: String(row[7] || '').trim(),
-        registrationDate: String(row[10] || '').trim()
-      })),
-      level4: level4.map(row => ({
-        id: row[0],
-        telegramId: String(row[1] || '').trim(),
-        firstName: String(row[2] || '').trim(),
-        lastName: String(row[3] || '').trim(),
-        promoCode: String(row[7] || '').trim(),
-        registrationDate: String(row[10] || '').trim()
-      }))
+      level1: level1.map(mapPartner),
+      level2: level2.map(mapPartner),
+      level3: level3.map(mapPartner),
+      level4: level4.map(mapPartner)
     };
     
     return { success: true, network };

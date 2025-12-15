@@ -333,6 +333,45 @@ class GoogleSheetsService {
       console.log('=== GET PARTNER NETWORK START ===');
       console.log('Getting network for Telegram ID:', telegramId);
       
+      // Используем Apps Script для получения сети партнеров
+      const result = await this.readFromAppsScript('getPartnerNetwork', { telegramId });
+      
+      if (result.success && result.result && result.result.network) {
+        const networkData = result.result.network;
+        console.log('Network data from Apps Script:', networkData);
+        
+        // Маппим данные из Apps Script в формат PartnerRecord
+        const mapPartner = (partner: any): PartnerRecord => ({
+          id: String(partner.id || ''),
+          telegramId: String(partner.telegramId || '').trim(),
+          firstName: String(partner.firstName || '').trim(),
+          lastName: String(partner.lastName || '').trim(),
+          phone: String(partner.phone || '').trim(),
+          email: String(partner.email || '').trim(),
+          username: partner.username ? String(partner.username).trim() : undefined,
+          promoCode: String(partner.promoCode || '').trim(),
+          inviterCode: partner.inviterCode ? String(partner.inviterCode).trim() : undefined,
+          inviterTelegramId: partner.inviterTelegramId ? String(partner.inviterTelegramId).trim() : undefined,
+          registrationDate: String(partner.registrationDate || '').trim(),
+          totalEarnings: parseFloat(partner.totalEarnings) || 0,
+          salesCount: parseInt(partner.salesCount) || 0
+        });
+        
+        const network: NetworkData = {
+          level1: (networkData.level1 || []).map(mapPartner),
+          level2: (networkData.level2 || []).map(mapPartner),
+          level3: (networkData.level3 || []).map(mapPartner),
+          level4: (networkData.level4 || []).map(mapPartner)
+        };
+        
+        console.log('Mapped network data:', network);
+        console.log(`Level 1: ${network.level1.length}, Level 2: ${network.level2.length}, Level 3: ${network.level3.length}, Level 4: ${network.level4.length}`);
+        console.log('=== GET PARTNER NETWORK END ===');
+        return network;
+      }
+      
+      // Fallback: читаем напрямую из Google Sheets API
+      console.log('Apps Script failed, trying direct Google Sheets API...');
       const url = `${this.baseUrl}/${this.spreadsheetId}/values/Партнеры!A:M?key=${this.apiKey}`;
       const response = await fetch(url);
       
@@ -349,17 +388,12 @@ class GoogleSheetsService {
       const partners = data.values.slice(1);
       console.log('Partner data rows count:', partners.length);
       
-      for (let i = 0; i < partners.length; i++) {
-        const row = partners[i];
-        console.log(`Checking row ${i + 1}:`, row);
-      }
-      
       // Find partners by levels
       const searchTgId = String(telegramId || '').trim();
       const level1 = partners.filter(row => {
         const inviterTgId = String(row[9] || '').trim();
         return inviterTgId === searchTgId;
-      }); // inviterTelegramId
+      });
       
       console.log(`Found ${level1.length} level 1 partners`);
       
@@ -403,71 +437,71 @@ class GoogleSheetsService {
       
       console.log(`Found ${level4.length} level 4 partners`);
       
-      const network = {
+      const network: NetworkData = {
         level1: level1.map(row => ({
-          id: row[0],
-          telegramId: row[1],
-          firstName: row[2],
-          lastName: row[3],
-          phone: row[4] || '',
-          email: row[5] || '',
-          username: row[6] || undefined,
-          promoCode: row[7],
-          inviterCode: row[8] || undefined,
-          inviterTelegramId: row[9] || undefined,
-          registrationDate: row[10] || '',
+          id: String(row[0] || ''),
+          telegramId: String(row[1] || '').trim(),
+          firstName: String(row[2] || '').trim(),
+          lastName: String(row[3] || '').trim(),
+          phone: String(row[4] || '').trim(),
+          email: String(row[5] || '').trim(),
+          username: row[6] ? String(row[6]).trim() : undefined,
+          promoCode: String(row[7] || '').trim(),
+          inviterCode: row[8] ? String(row[8]).trim() : undefined,
+          inviterTelegramId: row[9] ? String(row[9]).trim() : undefined,
+          registrationDate: String(row[10] || '').trim(),
           totalEarnings: parseFloat(row[11]) || 0,
           salesCount: parseInt(row[12]) || 0
         })),
         level2: level2.map(row => ({
-          id: row[0],
-          telegramId: row[1],
-          firstName: row[2],
-          lastName: row[3],
-          phone: row[4] || '',
-          email: row[5] || '',
-          username: row[6] || undefined,
-          promoCode: row[7],
-          inviterCode: row[8] || undefined,
-          inviterTelegramId: row[9] || undefined,
-          registrationDate: row[10] || '',
+          id: String(row[0] || ''),
+          telegramId: String(row[1] || '').trim(),
+          firstName: String(row[2] || '').trim(),
+          lastName: String(row[3] || '').trim(),
+          phone: String(row[4] || '').trim(),
+          email: String(row[5] || '').trim(),
+          username: row[6] ? String(row[6]).trim() : undefined,
+          promoCode: String(row[7] || '').trim(),
+          inviterCode: row[8] ? String(row[8]).trim() : undefined,
+          inviterTelegramId: row[9] ? String(row[9]).trim() : undefined,
+          registrationDate: String(row[10] || '').trim(),
           totalEarnings: parseFloat(row[11]) || 0,
           salesCount: parseInt(row[12]) || 0
         })),
         level3: level3.map(row => ({
-          id: row[0],
-          telegramId: row[1],
-          firstName: row[2],
-          lastName: row[3],
-          phone: row[4] || '',
-          email: row[5] || '',
-          username: row[6] || undefined,
-          promoCode: row[7],
-          inviterCode: row[8] || undefined,
-          inviterTelegramId: row[9] || undefined,
-          registrationDate: row[10] || '',
+          id: String(row[0] || ''),
+          telegramId: String(row[1] || '').trim(),
+          firstName: String(row[2] || '').trim(),
+          lastName: String(row[3] || '').trim(),
+          phone: String(row[4] || '').trim(),
+          email: String(row[5] || '').trim(),
+          username: row[6] ? String(row[6]).trim() : undefined,
+          promoCode: String(row[7] || '').trim(),
+          inviterCode: row[8] ? String(row[8]).trim() : undefined,
+          inviterTelegramId: row[9] ? String(row[9]).trim() : undefined,
+          registrationDate: String(row[10] || '').trim(),
           totalEarnings: parseFloat(row[11]) || 0,
           salesCount: parseInt(row[12]) || 0
         })),
         level4: level4.map(row => ({
-          id: row[0],
-          telegramId: row[1],
-          firstName: row[2],
-          lastName: row[3],
-          phone: row[4] || '',
-          email: row[5] || '',
-          username: row[6] || undefined,
-          promoCode: row[7],
-          inviterCode: row[8] || undefined,
-          inviterTelegramId: row[9] || undefined,
-          registrationDate: row[10] || '',
+          id: String(row[0] || ''),
+          telegramId: String(row[1] || '').trim(),
+          firstName: String(row[2] || '').trim(),
+          lastName: String(row[3] || '').trim(),
+          phone: String(row[4] || '').trim(),
+          email: String(row[5] || '').trim(),
+          username: row[6] ? String(row[6]).trim() : undefined,
+          promoCode: String(row[7] || '').trim(),
+          inviterCode: row[8] ? String(row[8]).trim() : undefined,
+          inviterTelegramId: row[9] ? String(row[9]).trim() : undefined,
+          registrationDate: String(row[10] || '').trim(),
           totalEarnings: parseFloat(row[11]) || 0,
           salesCount: parseInt(row[12]) || 0
         }))
       };
       
-      console.log('Partner not found, returning empty network');
-      console.log('Network data for user:', network);
+      console.log('Network data from Google Sheets API:', network);
+      console.log('=== GET PARTNER NETWORK END ===');
       return network;
       
     } catch (error) {
@@ -615,6 +649,49 @@ class GoogleSheetsService {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
+  }
+
+  private async readFromAppsScript(action: string, data: any): Promise<{ success: boolean; result?: any; error?: string }> {
+    if (!this.webAppUrl) {
+      console.warn('Google Apps Script URL не настроен');
+      return { success: false, error: 'Apps Script URL не настроен' };
+    }
+
+    try {
+      const getUrl = `${this.webAppUrl}?action=${encodeURIComponent(action)}&data=${encodeURIComponent(JSON.stringify(data))}`;
+      console.log('=== READING FROM APPS SCRIPT ===');
+      console.log('Action:', action);
+      console.log('Data:', data);
+      console.log('URL:', getUrl);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      const response = await fetch(getUrl, {
+        method: 'GET',
+        mode: 'cors',
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Apps Script response:', result);
+        return { success: true, result };
+      } else {
+        const errorText = await response.text();
+        console.error('Apps Script HTTP error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
+      }
+    } catch (error) {
+      console.error('Error reading from Apps Script:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
 
   private async writeToAppsScript(action: string, data: any): Promise<{ success: boolean; result?: any; error?: string }> {

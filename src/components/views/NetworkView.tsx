@@ -81,6 +81,13 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
               </div>
             ) : (
               <div className="space-y-6">
+                {/* Отладочная информация */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs">
+                    <p>Network data: Level1={network.level1?.length || 0}, Level2={network.level2?.length || 0}, Level3={network.level3?.length || 0}, Level4={network.level4?.length || 0}</p>
+                  </div>
+                )}
+                
                 {levelsLoading ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
@@ -93,8 +100,12 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
                 ) : levels.length > 0 ? (
                   levels.map((levelConfig) => {
                     try {
-                      const levelData = network[`level${levelConfig.level}` as keyof typeof network] || [];
+                      const levelKey = `level${levelConfig.level}` as keyof typeof network;
+                      const levelData = network[levelKey] || [];
                       const levelDataArray = Array.isArray(levelData) ? levelData : [];
+                      
+                      console.log(`Level ${levelConfig.level} data:`, levelDataArray);
+                      
                       return (
                         <div key={levelConfig.level} className="border rounded-lg p-4 bg-gray-50">
                           <div className="flex justify-between items-center mb-3">
@@ -105,15 +116,19 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
                               {levelDataArray.length}
                             </span>
                           </div>
-                        {levelDataArray.length > 0 ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {levelDataArray.map(renderPartnerCard)}
-                          </div>
-                        ) : (
-                          <p className="text-gray-500 text-center py-4">
-                            Пока нет партнеров на этом уровне
-                          </p>
-                        )}
+                          {levelDataArray.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {levelDataArray.map((partner, index) => (
+                                <div key={`${partner.telegramId}-${index}`}>
+                                  {renderPartnerCard(partner)}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 text-center py-4">
+                              Пока нет партнеров на этом уровне
+                            </p>
+                          )}
                         </div>
                       );
                     } catch (error) {
@@ -121,6 +136,7 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
                       return (
                         <div key={levelConfig.level} className="border rounded-lg p-4 bg-gray-50">
                           <p className="text-red-600">Ошибка отображения уровня {levelConfig.level}</p>
+                          <p className="text-xs text-gray-500 mt-2">{error instanceof Error ? error.message : String(error)}</p>
                         </div>
                       );
                     }
