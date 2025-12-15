@@ -28,6 +28,14 @@ interface CommissionRecord {
   date: string;
 }
 
+interface PartnerStats {
+  totalIncome: number; // Общий доход
+  incomeByLevels: number; // Доход от уровней (сумма всех начислений)
+  incomeFromPartners: number; // Доход от партнеров (уровни 2-4)
+  partnersCount: number; // Количество приведенных партнеров
+  uniqueSalesCount: number; // Количество уникальных продаж
+}
+
 interface NetworkData {
   level1: PartnerRecord[];
   level2: PartnerRecord[];
@@ -53,15 +61,15 @@ class GoogleSheetsService {
   constructor() {
     this.spreadsheetId = import.meta.env.VITE_GOOGLE_SHEETS_ID || '1fh4-V4n0ho-RF06xcxl0JYxK5xQf8WOMSYy-tF6vRkU';
     this.apiKey = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || 'AIzaSyD1-O9ID7-2EFVum1ITNRyrhJYtvlY5wKg';
-    this.webAppUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycby8xGWMPMb8oOYnzxV9ACeR4aKb0D-lLl4DBiPyBzCCsqvEzwJXQ1FcFsurqLcnak5R/exec';
+    this.webAppUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbyMwWmAKr5pJTJ_Q7dUL1z16QfA59dP08Fzda_gxWSH1YUV_eVgSvhMi5cYxw08h1s/exec';
     
     console.log('🚀🚀🚀 GoogleSheetsService NEW v19.0 ULTIMATE FIX 🚀🚀🚀');
     console.log('Spreadsheet ID:', this.spreadsheetId ? `${this.spreadsheetId.substring(0, 10)}...` : 'NOT SET');
     console.log('API Key for read:', this.apiKey ? `${this.apiKey.substring(0, 10)}...` : 'NOT SET');
     console.log('Web App URL:', this.webAppUrl ? `${this.webAppUrl.substring(0, 30)}...` : 'NOT SET');
     console.log('Full Web App URL:', this.webAppUrl);
-    console.log('🔍 URL CHECK: Should contain AKfycby8xGWMPMb8oOYnzxV9ACeR4aKb0D-lLl4DBiPyBzCCsqvEzwJXQ1FcFsurqLcnak5R');
-    console.log('🔍 URL contains correct ID:', this.webAppUrl.includes('AKfycby8xGWMPMb8oOYnzxV9ACeR4aKb0D-lLl4DBiPyBzCCsqvEzwJXQ1FcFsurqLcnak5R'));
+    console.log('🔍 URL CHECK: Should contain AKfycbyMwWmAKr5pJTJ_Q7dUL1z16QfA59dP08Fzda_gxWSH1YUV_eVgSvhMi5cYxw08h1s');
+    console.log('🔍 URL contains correct ID:', this.webAppUrl.includes('AKfycbyMwWmAKr5pJTJ_Q7dUL1z16QfA59dP08Fzda_gxWSH1YUV_eVgSvhMi5cYxw08h1s'));
     
     if (!this.apiKey || !this.spreadsheetId) {
       console.warn('Google Sheets API не настроен полностью. Установите переменные окружения VITE_GOOGLE_SHEETS_API_KEY и VITE_GOOGLE_SHEETS_ID');
@@ -93,24 +101,28 @@ class GoogleSheetsService {
       const partners = data.values.slice(1); // Skip header row
       console.log('Partner data rows count:', partners.length);
       
+      const searchTgId = String(telegramId || '').trim();
+      
       for (let i = 0; i < partners.length; i++) {
         const row = partners[i];
         console.log(`Checking row ${i + 1}:`, row);
         
-        if (row[1] === telegramId) { // telegramId is in column B (index 1)
-          console.log('Partner found!');
+        // Нормализуем Telegram ID для сравнения
+        const rowTgId = String(row[1] || '').trim();
+        if (rowTgId === searchTgId) { // telegramId is in column B (index 1)
+          console.log('Partner found!', row);
           return {
-            id: row[0],
-            telegramId: row[1],
-            firstName: row[2],
-            lastName: row[3],
-            phone: row[4],
-            email: row[5],
-            username: row[6],
-            promoCode: row[7],
-            inviterCode: row[8],
-            inviterTelegramId: row[9],
-            registrationDate: row[10],
+            id: String(row[0] || '').trim(),
+            telegramId: rowTgId,
+            firstName: String(row[2] || '').trim(),
+            lastName: String(row[3] || '').trim(),
+            phone: String(row[4] || '').trim(),
+            email: String(row[5] || '').trim(),
+            username: row[6] ? String(row[6]).trim() : undefined,
+            promoCode: String(row[7] || '').trim(),
+            inviterCode: row[8] ? String(row[8]).trim() : undefined,
+            inviterTelegramId: row[9] ? String(row[9]).trim() : undefined,
+            registrationDate: String(row[10] || '').trim(),
             totalEarnings: parseFloat(row[11]) || 0,
             salesCount: parseInt(row[12]) || 0
           };
@@ -132,46 +144,187 @@ class GoogleSheetsService {
       console.log('=== GET PARTNER COMMISSIONS START ===');
       console.log('Getting commissions for Telegram ID:', telegramId);
       
-      const url = `${this.baseUrl}/${this.spreadsheetId}/values/Комиссии!A:G?key=${this.apiKey}`;
-      const response = await fetch(url);
+      // Пробуем разные варианты названий листа
+      const possibleSheetNames = ['Начисления', 'Комиссии', 'Commissions', 'Начисление'];
+      let commissions: any[] = [];
+      let foundSheet = false;
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      for (const sheetName of possibleSheetNames) {
+        try {
+          const url = `${this.baseUrl}/${this.spreadsheetId}/values/${encodeURIComponent(sheetName)}!A:G?key=${this.apiKey}`;
+          console.log(`Trying to fetch from sheet: ${sheetName}`, url);
+          const response = await fetch(url);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`Response from ${sheetName}:`, data);
+            
+            if (data.values && data.values.length > 1) {
+              commissions = data.values.slice(1);
+              foundSheet = true;
+              console.log(`Successfully found data in sheet: ${sheetName}, rows: ${commissions.length}`);
+              break;
+            }
+          } else {
+            console.log(`Sheet ${sheetName} not found (${response.status}), trying next...`);
+          }
+        } catch (sheetError) {
+          console.log(`Error accessing sheet ${sheetName}:`, sheetError);
+          continue;
+        }
       }
       
-      const data = await response.json();
-      
-      if (!data.values || data.values.length <= 1) {
+      if (!foundSheet || commissions.length === 0) {
+        console.warn('No commissions data found in any sheet');
         return [];
       }
       
-      const commissions = data.values.slice(1);
       console.log('Commissions data rows count:', commissions.length);
       
-      for (let i = 0; i < commissions.length; i++) {
-        const row = commissions[i];
-        console.log(`Checking commission row ${i + 1}:`, row);
-      }
+      // Структура листа "Начисления": 
+      // A - ID, B - ID продажи, C - Telegram ID партнера, D - Уровень, E - Сумма, F - Процент, G - Дата расчета
+      const searchTgId = String(telegramId || '').trim();
+      console.log('Searching for Telegram ID:', searchTgId);
+      console.log('Total commissions rows before filter:', commissions.length);
       
       const partnerCommissions = commissions
-        .filter(row => row[2] === telegramId) // partnerTelegramId is in column C (index 2)
+        .filter(row => {
+          if (!row || row.length < 3) {
+            console.log('Skipping invalid row:', row);
+            return false;
+          }
+          // Нормализуем Telegram ID для сравнения (могут быть строки или числа)
+          const rowTgId = String(row[2] || '').trim();
+          const match = rowTgId === searchTgId;
+          if (match) {
+            console.log('Found matching commission:', {
+              id: row[0],
+              saleId: row[1],
+              tgId: row[2],
+              level: row[3],
+              amount: row[4],
+              percentage: row[5],
+              date: row[6]
+            });
+          }
+          return match;
+        })
         .map(row => ({
-          id: row[0],
-          saleId: row[1],
-          partnerTelegramId: row[2],
-          level: parseInt(row[3]),
-          amount: parseFloat(row[4]),
-          commission: parseFloat(row[5]),
-          date: row[6]
+          id: String(row[0] || '').trim(),
+          saleId: String(row[1] || '').trim(),
+          partnerTelegramId: String(row[2] || '').trim(),
+          level: parseInt(row[3]) || 1,
+          amount: parseFloat(row[4]) || 0, // Сумма
+          commission: parseFloat(row[5]) || 0, // Процент
+          date: String(row[6] || '').trim() // Дата расчета
         }));
       
+      console.log(`Filtered ${partnerCommissions.length} commissions for Telegram ID ${searchTgId}`);
+      
       console.log(`Found ${partnerCommissions.length} commissions for partner ${telegramId}`);
+      console.log('Sample commissions:', partnerCommissions.slice(0, 3));
       console.log('=== GET PARTNER COMMISSIONS END ===');
       return partnerCommissions;
       
     } catch (error) {
       console.error('Error fetching commissions:', error);
       return [];
+    }
+  }
+
+  async getPartnerStats(telegramId: string, network?: NetworkData): Promise<PartnerStats> {
+    try {
+      console.log('=== GET PARTNER STATS START ===');
+      console.log('Getting stats for Telegram ID:', telegramId);
+      console.log('Network provided:', !!network);
+      
+      // Получаем все начисления партнера
+      const commissions = await this.getPartnerCommissions(telegramId);
+      console.log('Commissions fetched:', commissions.length);
+      console.log('Commissions data:', commissions);
+      
+      // Общий доход - сумма всех значений из колонки "Сумма"
+      const totalIncome = commissions.reduce((sum, comm) => {
+        const amount = comm.amount || 0;
+        console.log(`Adding commission amount: ${amount}, total so far: ${sum}`);
+        return sum + amount;
+      }, 0);
+      console.log('Total income calculated:', totalIncome);
+      
+      // Доход от уровней - это общий доход (все начисления)
+      const incomeByLevels = totalIncome;
+      
+      // Доход от партнеров - это доход с уровней 2-4 (не с уровня 1, так как уровень 1 - это прямые продажи)
+      const incomeFromPartners = commissions
+        .filter(comm => {
+          const level = comm.level || 1;
+          return level >= 2 && level <= 4;
+        })
+        .reduce((sum, comm) => sum + (comm.amount || 0), 0);
+      console.log('Income from partners (levels 2-4):', incomeFromPartners);
+      
+      // Количество приведенных партнеров - из сети
+      let partnersCount = 0;
+      let networkData = network;
+      
+      // Если сеть не передана, получаем её
+      if (!networkData) {
+        try {
+          console.log('Network not provided, fetching...');
+          networkData = await this.getPartnerNetwork(telegramId);
+          console.log('Network fetched:', networkData);
+        } catch (error) {
+          console.warn('Failed to fetch network for stats:', error);
+        }
+      }
+      
+      if (networkData) {
+        partnersCount = (networkData.level1?.length || 0) + 
+                       (networkData.level2?.length || 0) + 
+                       (networkData.level3?.length || 0) + 
+                       (networkData.level4?.length || 0);
+        console.log('Partners count calculated:', partnersCount);
+        console.log('Level breakdown:', {
+          level1: networkData.level1?.length || 0,
+          level2: networkData.level2?.length || 0,
+          level3: networkData.level3?.length || 0,
+          level4: networkData.level4?.length || 0
+        });
+      }
+      
+      // Количество уникальных продаж - уникальные ID продажи
+      const uniqueSaleIds = new Set(
+        commissions
+          .map(comm => comm.saleId)
+          .filter(id => id && id.toString().trim() !== '')
+      );
+      const uniqueSalesCount = uniqueSaleIds.size;
+      console.log('Unique sales count:', uniqueSalesCount);
+      console.log('Unique sale IDs:', Array.from(uniqueSaleIds));
+      
+      const stats: PartnerStats = {
+        totalIncome,
+        incomeByLevels,
+        incomeFromPartners,
+        partnersCount,
+        uniqueSalesCount
+      };
+      
+      console.log('=== FINAL PARTNER STATS ===');
+      console.log(JSON.stringify(stats, null, 2));
+      console.log('=== GET PARTNER STATS END ===');
+      return stats;
+      
+    } catch (error) {
+      console.error('Error fetching partner stats:', error);
+      console.error('Error details:', error instanceof Error ? error.stack : error);
+      return {
+        totalIncome: 0,
+        incomeByLevels: 0,
+        incomeFromPartners: 0,
+        partnersCount: 0,
+        uniqueSalesCount: 0
+      };
     }
   }
 
@@ -202,28 +355,53 @@ class GoogleSheetsService {
       }
       
       // Find partners by levels
-      const level1 = partners.filter(row => row[9] === telegramId); // inviterTelegramId
+      const searchTgId = String(telegramId || '').trim();
+      const level1 = partners.filter(row => {
+        const inviterTgId = String(row[9] || '').trim();
+        return inviterTgId === searchTgId;
+      }); // inviterTelegramId
+      
+      console.log(`Found ${level1.length} level 1 partners`);
+      
       const level2: any[] = [];
       const level3: any[] = [];
       const level4: any[] = [];
       
       // Level 2
       level1.forEach(partner => {
-        const level2Partners = partners.filter(row => row[9] === partner[1]);
+        const partnerTgId = String(partner[1] || '').trim();
+        const level2Partners = partners.filter(row => {
+          const inviterTgId = String(row[9] || '').trim();
+          return inviterTgId === partnerTgId;
+        });
         level2.push(...level2Partners);
       });
       
+      console.log(`Found ${level2.length} level 2 partners`);
+      
       // Level 3
       level2.forEach(partner => {
-        const level3Partners = partners.filter(row => row[9] === partner[1]);
+        const partnerTgId = String(partner[1] || '').trim();
+        const level3Partners = partners.filter(row => {
+          const inviterTgId = String(row[9] || '').trim();
+          return inviterTgId === partnerTgId;
+        });
         level3.push(...level3Partners);
       });
       
+      console.log(`Found ${level3.length} level 3 partners`);
+      
       // Level 4
       level3.forEach(partner => {
-        const level4Partners = partners.filter(row => row[9] === partner[1]);
+        const partnerTgId = String(partner[1] || '').trim();
+        const level4Partners = partners.filter(row => {
+          const inviterTgId = String(row[9] || '').trim();
+          return inviterTgId === partnerTgId;
+        });
         level4.push(...level4Partners);
       });
+      
+      console.log(`Found ${level4.length} level 4 partners`);
       
       const network = {
         level1: level1.map(row => ({
@@ -723,3 +901,5 @@ class GoogleSheetsService {
 }
 
 export const googleSheetsService = new GoogleSheetsService();
+
+export type { PartnerRecord, CommissionRecord, NetworkData, LevelConfig, PartnerStats };

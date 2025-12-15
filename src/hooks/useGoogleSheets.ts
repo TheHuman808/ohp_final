@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { googleSheetsService, type PartnerRecord, type CommissionRecord } from '@/services/googleSheetsService';
+import { googleSheetsService, type PartnerRecord, type CommissionRecord, type PartnerStats, type NetworkData } from '@/services/googleSheetsService';
 
 export const usePartner = (telegramId: string, forceRefresh: number = 0) => {
   const [partner, setPartner] = useState<PartnerRecord | null>(null);
@@ -219,5 +219,73 @@ export const usePartnerNetwork = (telegramId: string) => {
     loading,
     error,
     refresh: fetchNetwork
+  };
+};
+
+export const usePartnerStats = (telegramId: string, network?: NetworkData) => {
+  const [stats, setStats] = useState<PartnerStats>({
+    totalIncome: 0,
+    incomeByLevels: 0,
+    incomeFromPartners: 0,
+    partnersCount: 0,
+    uniqueSalesCount: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStats = async () => {
+    if (!telegramId) {
+      console.log('No Telegram ID provided, skipping stats fetch');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('=== FETCHING PARTNER STATS ===');
+      console.log('Telegram ID:', telegramId);
+      
+      const statsData = await googleSheetsService.getPartnerStats(telegramId, network);
+      
+      console.log('Partner stats:', statsData);
+      setStats(statsData);
+    } catch (err) {
+      console.error('Error fetching partner stats:', err);
+      setError('Ошибка загрузки статистики');
+      setStats({
+        totalIncome: 0,
+        incomeByLevels: 0,
+        incomeFromPartners: 0,
+        partnersCount: 0,
+        uniqueSalesCount: 0
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (telegramId) {
+      fetchStats();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [telegramId]);
+  
+  // Обновляем статистику при изменении сети
+  useEffect(() => {
+    if (telegramId && network) {
+      console.log('Network changed, refreshing stats...');
+      fetchStats();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [network]);
+
+  return {
+    stats,
+    loading,
+    error,
+    refresh: fetchStats
   };
 };

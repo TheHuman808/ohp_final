@@ -6,7 +6,7 @@ import PersonalDataView from "@/components/views/PersonalDataView";
 import DashboardView from "@/components/views/DashboardView";
 import StatsView from "@/components/views/StatsView";
 import NetworkView from "@/components/views/NetworkView";
-import { usePartnerCommissions, usePartnerNetwork } from "@/hooks/useGoogleSheets";
+import { usePartnerCommissions, usePartnerNetwork, usePartnerStats } from "@/hooks/useGoogleSheets";
 import { googleSheetsService } from "@/services/googleSheetsService";
 
 interface TelegramUser {
@@ -167,6 +167,12 @@ const Index = () => {
     loading: networkLoading,
     error: networkError
   } = usePartnerNetwork(loggedOut ? '' : (telegramUser?.id || ''));
+
+  const {
+    stats,
+    loading: statsLoading,
+    error: statsError
+  } = usePartnerStats(loggedOut ? '' : (telegramUser?.id || ''), network);
 
   const handlePromoCodeSuccess = (validInviterCode: string) => {
     console.log('Promo code validated successfully, proceeding to NEW USER registration:', validInviterCode);
@@ -391,6 +397,9 @@ const Index = () => {
       <DashboardView
         partner={partner}
         commissions={commissions}
+        stats={stats}
+        statsLoading={statsLoading}
+        network={network}
         currentView={currentView}
         onViewChange={handleViewChange}
         onLogout={handleLogout}

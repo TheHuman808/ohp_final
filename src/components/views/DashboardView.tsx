@@ -2,21 +2,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
-import { Users, TrendingUp, Share2, LogOut } from "lucide-react";
-import type { PartnerRecord, CommissionRecord } from "@/services/googleSheetsService";
+import { Users, TrendingUp, Share2, LogOut, DollarSign, Layers } from "lucide-react";
+import type { PartnerRecord, CommissionRecord, PartnerStats, NetworkData } from "@/services/googleSheetsService";
 import { useLevelsConfig } from "@/hooks/useLevelsConfig";
 
 interface DashboardViewProps {
   partner: PartnerRecord;
   commissions: CommissionRecord[];
+  stats: PartnerStats;
+  statsLoading: boolean;
+  network: NetworkData;
   currentView: "registration" | "dashboard" | "stats" | "network" | "personalData";
   onViewChange: (view: "registration" | "dashboard" | "stats" | "network" | "personalData") => void;
   onLogout?: () => void;
 }
 
-const DashboardView = ({ partner, commissions, currentView, onViewChange, onLogout }: DashboardViewProps) => {
+const DashboardView = ({ partner, commissions, stats, statsLoading, network, currentView, onViewChange, onLogout }: DashboardViewProps) => {
   const { levels, loading: levelsLoading, error: levelsError } = useLevelsConfig();
-  const totalCommissions = commissions.reduce((sum, comm) => sum + comm.amount, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -31,31 +33,63 @@ const DashboardView = ({ partner, commissions, currentView, onViewChange, onLogo
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm">
-                <TrendingUp className="w-8 h-8 text-green-600" />
-                <div>
-                  <p className="text-sm text-gray-600">Общий доход</p>
-                  <p className="text-xl font-bold">₽{totalCommissions.toLocaleString()}</p>
-                </div>
+            {statsLoading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p className="text-sm text-gray-600">Загрузка статистики...</p>
               </div>
-              
-              <div className="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm">
-                <Users className="w-8 h-8 text-blue-600" />
-                <div>
-                  <p className="text-sm text-gray-600">Партнеры</p>
-                  <p className="text-xl font-bold">0</p>
+            ) : stats ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm">
+                    <TrendingUp className="w-8 h-8 text-green-600" />
+                    <div>
+                      <p className="text-sm text-gray-600">Общий доход</p>
+                      <p className="text-xl font-bold">₽{stats.totalIncome.toLocaleString('ru-RU')}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm">
+                    <Users className="w-8 h-8 text-blue-600" />
+                    <div>
+                      <p className="text-sm text-gray-600">Партнеры</p>
+                      <p className="text-xl font-bold">{stats.partnersCount}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm">
+                    <Share2 className="w-8 h-8 text-purple-600" />
+                    <div>
+                      <p className="text-sm text-gray-600">Продажи</p>
+                      <p className="text-xl font-bold">{stats.uniqueSalesCount}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm">
-                <Share2 className="w-8 h-8 text-purple-600" />
-                <div>
-                  <p className="text-sm text-gray-600">Продажи</p>
-                  <p className="text-xl font-bold">{partner.salesCount}</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <Layers className="w-6 h-6 text-blue-600" />
+                    <div>
+                      <p className="text-sm text-gray-600">Доход от уровней</p>
+                      <p className="text-lg font-bold text-blue-700">₽{stats.incomeByLevels.toLocaleString('ru-RU')}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+                    <DollarSign className="w-6 h-6 text-green-600" />
+                    <div>
+                      <p className="text-sm text-gray-600">Доход от партнеров</p>
+                      <p className="text-lg font-bold text-green-700">₽{stats.incomeFromPartners.toLocaleString('ru-RU')}</p>
+                    </div>
+                  </div>
                 </div>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-600">Нет данных для отображения</p>
+                <p className="text-xs text-gray-500 mt-2">Проверьте консоль браузера для деталей</p>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
