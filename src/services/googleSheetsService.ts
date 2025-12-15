@@ -839,29 +839,62 @@ class GoogleSheetsService {
       console.log('=== READING FROM APPS SCRIPT ===');
       console.log('Action:', action);
       console.log('Data:', data);
-      console.log('URL:', getUrl);
+      console.log('URL length:', getUrl.length);
+      console.log('URL (first 200 chars):', getUrl.substring(0, 200));
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // Увеличиваем таймаут до 60 секунд
 
       const response = await fetch(getUrl, {
         method: 'GET',
         mode: 'cors',
-        signal: controller.signal
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json'
+        }
       });
       
       clearTimeout(timeoutId);
 
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (response.ok) {
-        const result = await response.json();
-        console.log('Apps Script response:', result);
-        return { success: true, result };
+        const responseText = await response.text();
+        console.log('Response text length:', responseText.length);
+        console.log('Response text (first 500 chars):', responseText.substring(0, 500));
+        
+        try {
+          const result = JSON.parse(responseText);
+          console.log('Parsed JSON result type:', typeof result);
+          console.log('Parsed JSON result keys:', Object.keys(result || {}));
+          
+          // Проверяем размер результата
+          const resultSize = JSON.stringify(result).length;
+          console.log('Result size (bytes):', resultSize);
+          
+          if (resultSize > 1000000) { // Больше 1MB
+            console.warn('⚠️ Large response detected:', resultSize, 'bytes');
+          }
+          
+          return { success: true, result };
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          console.error('Response text that failed to parse:', responseText.substring(0, 1000));
+          return { success: false, error: 'Failed to parse JSON response: ' + (parseError as Error).message };
+        }
       } else {
-        const errorText = await response.text();
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch (e) {
+          errorText = `Failed to read error response: ${(e as Error).message}`;
+        }
         console.error('Apps Script HTTP error:', {
           status: response.status,
           statusText: response.statusText,
-          body: errorText
+          body: errorText.substring(0, 500)
         });
         return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
       }
