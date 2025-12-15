@@ -927,11 +927,12 @@ function getPartnerCommissions(telegramId) {
           saleId: saleId,
           saleDateFromMap: saleDate,
           saleDateExists: !!salesDatesMap[saleId],
-          allSaleIds: Object.keys(salesDatesMap).slice(0, 5)
+          allSaleIds: Object.keys(salesDatesMap).slice(0, 5),
+          salesDatesMapSize: Object.keys(salesDatesMap).length
         });
       }
       
-      return {
+      const commission = {
         id: String(row[0] || '').trim(),
         saleId: saleId,
         partnerTelegramId: String(row[2] || '').trim(),
@@ -939,8 +940,21 @@ function getPartnerCommissions(telegramId) {
         amount: parseFloat(row[4]) || 0,
         commission: parseFloat(row[5]) || 0,
         date: String(row[6] || '').trim(), // Дата расчета
-        saleDate: saleDate // Дата продажи
+        saleDate: saleDate || '' // Дата продажи (всегда строка, даже если пустая)
       };
+      
+      // Дополнительное логирование для первых 3 комиссий
+      if (index < 3) {
+        console.log(`Commission ${index} mapped:`, {
+          id: commission.id,
+          saleId: commission.saleId,
+          saleDate: commission.saleDate,
+          saleDateType: typeof commission.saleDate,
+          saleDateLength: commission.saleDate ? commission.saleDate.length : 0
+        });
+      }
+      
+      return commission;
     });
     
     console.log(`Returning ${commissions.length} commissions for partner ${telegramId}`);
@@ -951,9 +965,22 @@ function getPartnerCommissions(telegramId) {
         id: commissions[0].id,
         saleId: commissions[0].saleId,
         saleDate: commissions[0].saleDate,
+        saleDateType: typeof commissions[0].saleDate,
         date: commissions[0].date
       });
-      console.log('Commissions with saleDate count:', commissions.filter(c => c.saleDate && c.saleDate.trim() !== '').length);
+      const commissionsWithSaleDate = commissions.filter(c => c.saleDate && c.saleDate.trim() !== '');
+      console.log('Commissions with saleDate count:', commissionsWithSaleDate.length);
+      console.log('Commissions without saleDate count:', commissions.length - commissionsWithSaleDate.length);
+      
+      // Показываем примеры комиссий без даты продажи
+      const withoutSaleDate = commissions.filter(c => !c.saleDate || c.saleDate.trim() === '');
+      if (withoutSaleDate.length > 0) {
+        console.log('Sample commissions without saleDate:', withoutSaleDate.slice(0, 3).map(c => ({
+          id: c.id,
+          saleId: c.saleId,
+          saleDate: c.saleDate
+        })));
+      }
     }
     
     console.log('=== GET PARTNER COMMISSIONS END ===');
