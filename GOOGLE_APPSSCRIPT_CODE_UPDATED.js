@@ -551,29 +551,39 @@ function calculateCommissions() {
     }
 
     // --- 4.2 РАСЧЕТ MLM ПО ЦЕПОЧКЕ ВВЕРХ (UPLINE) ---
-    // Начинаем с пригласившего партнера (inviterTgId), а не с самого sourcePartner
-    let currentPartner = inviterTgId && partnersByTgId[inviterTgId] ? partnersByTgId[inviterTgId] : null;
+    // ЛОГИКА: 
+    // 1. sourcePartner - партнер, который сделал продажу (найден по промокоду из продажи)
+    // 2. inviterTgId - Telegram ID пригласившего sourcePartner (из колонки J листа Партнеры)
+    // 3. Этот inviterTgId получает комиссию уровня 1
+    // 4. Затем идем вверх по цепочке от этого inviterTgId
     
-    if (!currentPartner) {
-      console.log(`Sale ${saleId}: No inviter found for source partner ${sourcePartner.tgId}, skipping commission calculation`);
+    if (!inviterTgId) {
+      console.log(`Sale ${saleId}: Source partner ${sourcePartner.tgId} has no inviter (inviterTgId is empty), skipping commission calculation`);
       return; // Если нет пригласившего, не начисляем комиссию
     }
     
+    // Проверяем, что пригласивший существует в базе партнеров
+    let currentPartner = partnersByTgId[inviterTgId];
+    
+    if (!currentPartner) {
+      console.log(`Sale ${saleId}: Inviter ${inviterTgId} not found in partners database, skipping commission calculation`);
+      return; // Если пригласивший не найден в базе, не начисляем комиссию
+    }
+    
+    console.log(`Sale ${saleId}: Starting MLM chain from inviter ${inviterTgId} (who invited source partner ${sourcePartner.tgId})`);
+    
     // Ищем пригласителей до 4 уровня
+    // Уровень 1: inviterTgId (тот, кто пригласил sourcePartner)
+    // Уровень 2: пригласивший уровня 1
+    // Уровень 3: пригласивший уровня 2
+    // Уровень 4: пригласивший уровня 3
     for (let level = 1; level <= 4; level++) {
-      const inviterTgId = currentPartner.inviterTgId;
-      
-      // Если нет пригласителя, прерываем цепочку
-      if (!inviterTgId || !partnersByTgId[inviterTgId]) {
-        console.log(`Sale ${saleId}: No inviter at level ${level}, stopping chain`);
-        break;
-      }
-      
-      const beneficiary = partnersByTgId[inviterTgId];
+      // currentPartner - это партнер, который получает комиссию на текущем уровне
+      const beneficiaryTgId = currentPartner.tgId;
       const percentage = levels[level] || 0;
       
-      if (percentage > 0) {
-        const uniqueKey = `${saleId}_${beneficiary.tgId}_${level}`;
+      if (percentage > 0 && beneficiaryTgId) {
+        const uniqueKey = `${saleId}_${beneficiaryTgId}_${level}`;
         
         if (!existingAccruals.has(uniqueKey)) {
           const commissionAmount = saleSum * percentage;
@@ -587,7 +597,7 @@ function calculateCommissions() {
           newAccruals.push([
             customerInfo || saleId,     // A: ID (информация о клиенте или ID продажи)
             saleId,                      // B: ID продажи
-            beneficiary.tgId,             // C: Telegram ID партнера (получателя комиссии)
+            beneficiaryTgId,             // C: Telegram ID партнера (получателя комиссии) - это пригласивший на соответствующем уровне
             level,                       // D: Уровень
             commissionAmount,            // E: Сумма комиссии
             percentage,                  // F: Процент
@@ -598,14 +608,23 @@ function calculateCommissions() {
           ]);
           
           existingAccruals.add(uniqueKey); // Добавляем, чтобы избежать дублей в этой же сессии
-          console.log(`Sale ${saleId}: Added accrual for partner ${beneficiary.tgId} at level ${level}, amount: ${commissionAmount}, quantity: ${quantity}`);
+          console.log(`Sale ${saleId}: Added accrual for partner ${beneficiaryTgId} at level ${level}, amount: ${commissionAmount}, quantity: ${quantity}`);
         } else {
-          console.log(`Sale ${saleId}: Accrual already exists for partner ${beneficiary.tgId} at level ${level}`);
+          console.log(`Sale ${saleId}: Accrual already exists for partner ${beneficiaryTgId} at level ${level}`);
         }
       }
       
-      // Поднимаемся на уровень выше
-      currentPartner = beneficiary;
+      // Поднимаемся на уровень выше - ищем пригласившего currentPartner
+      const nextInviterTgId = currentPartner.inviterTgId;
+      
+      // Если нет пригласителя, прерываем цепочку
+      if (!nextInviterTgId || !partnersByTgId[nextInviterTgId]) {
+        console.log(`Sale ${saleId}: No inviter at level ${level + 1}, stopping chain at level ${level}`);
+        break;
+      }
+      
+      // Переходим к следующему уровню
+      currentPartner = partnersByTgId[nextInviterTgId];
     }
   });
 
@@ -1473,3 +1492,4 @@ function setupImportOrdersTrigger() {
     return { success: false, error: 'Ошибка при создании триггера: ' + error.toString() };
   }
 }
+
