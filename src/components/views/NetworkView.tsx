@@ -21,28 +21,14 @@ interface NetworkViewProps {
 const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLogout }: NetworkViewProps) => {
   const { levels, loading: levelsLoading, error: levelsError } = useLevelsConfig();
   
-  // Отладочная информация
-  console.log('=== NETWORK VIEW DEBUG ===');
-  console.log('NetworkView - network data:', network);
-  console.log('NetworkView - networkLoading:', networkLoading);
-  console.log('NetworkView - levels:', levels);
-  console.log('NetworkView - level1 count:', network?.level1?.length || 0);
-  console.log('NetworkView - level2 count:', network?.level2?.length || 0);
-  console.log('NetworkView - level3 count:', network?.level3?.length || 0);
-  console.log('NetworkView - level4 count:', network?.level4?.length || 0);
-  console.log('NetworkView - level1 data:', network?.level1);
-  console.log('NetworkView - level2 data:', network?.level2);
-  
   const renderPartnerCard = (partner: PartnerRecord) => {
     try {
-      console.log('Rendering partner card:', partner);
       const totalEarnings = partner.totalEarnings || 0;
       // Формируем имя: Имя + первая буква фамилии (если есть)
       const lastNameInitial = partner.lastName && partner.lastName.trim() ? partner.lastName.trim()[0].toUpperCase() + '.' : '';
       const displayName = `${partner.firstName || ''} ${lastNameInitial}`.trim();
       
       if (!partner || !partner.id) {
-        console.error('Invalid partner data:', partner);
         return (
           <div className="bg-white p-3 rounded-lg border border-red-200">
             <p className="text-red-600 text-sm">Ошибка: неверные данные партнера</p>
@@ -82,7 +68,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
         </div>
       );
     } catch (error) {
-      console.error('Error rendering partner card:', error, partner);
       return (
         <div key={partner.id} className="bg-white p-3 rounded-lg border border-gray-200">
           <p className="text-red-600 text-sm">Ошибка отображения данных партнера</p>
@@ -108,14 +93,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Отладочная информация - всегда показываем для отладки */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-xs">
-                  <p className="font-semibold mb-2">Отладочная информация:</p>
-                  <p>Network data: Level1={network?.level1?.length || 0}, Level2={network?.level2?.length || 0}, Level3={network?.level3?.length || 0}, Level4={network?.level4?.length || 0}</p>
-                  <p>Network object: {JSON.stringify(network, null, 2).substring(0, 500)}</p>
-                  <p>Level1 data sample: {network?.level1?.[0] ? JSON.stringify(network.level1[0]) : 'нет данных'}</p>
-                </div>
-                
                 {levelsLoading ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
@@ -131,13 +108,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
                       const levelKey = `level${levelConfig.level}` as keyof typeof network;
                       const levelData = network?.[levelKey] || [];
                       const levelDataArray = Array.isArray(levelData) ? levelData : [];
-                      
-                      console.log(`=== RENDERING LEVEL ${levelConfig.level} ===`);
-                      console.log(`Level key: ${levelKey}`);
-                      console.log(`Level data:`, levelData);
-                      console.log(`Level data array:`, levelDataArray);
-                      console.log(`Level data array length:`, levelDataArray.length);
-                      console.log(`First partner in level:`, levelDataArray[0]);
                       
                       return (
                         <div key={levelConfig.level} className="border rounded-lg p-4 bg-gray-50">
@@ -165,11 +135,9 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
                         </div>
                       );
                     } catch (error) {
-                      console.error('Error rendering level:', error, levelConfig);
                       return (
                         <div key={levelConfig.level} className="border rounded-lg p-4 bg-gray-50">
                           <p className="text-red-600">Ошибка отображения уровня {levelConfig.level}</p>
-                          <p className="text-xs text-gray-500 mt-2">{error instanceof Error ? error.message : String(error)}</p>
                         </div>
                       );
                     }
@@ -193,13 +161,8 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Logout button clicked on mobile (bottom)');
-              try {
-                if (onLogout) {
-                  onLogout();
-                }
-              } catch (error) {
-                console.error('Error in logout handler:', error);
+              if (onLogout) {
+                onLogout();
               }
             }}
             className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 relative z-20 min-h-[44px]"
