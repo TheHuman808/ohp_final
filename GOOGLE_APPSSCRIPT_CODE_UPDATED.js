@@ -99,6 +99,15 @@ function handleRequest(e) {
         case 'updatePartnersSalesCount':
           result = updatePartnersSalesCount();
           break;
+        case 'normalizeAccrualsPhones':
+          result = normalizeAccrualsPhones();
+          break;
+        case 'syncSalesDataToAccruals':
+          result = syncSalesDataToAccruals();
+          break;
+        case 'updateAccrualsData':
+          result = updateAccrualsData();
+          break;
         case 'setupSalesCountUpdateTrigger':
           result = setupSalesCountUpdateTrigger();
           break;
@@ -156,6 +165,15 @@ function handleRequest(e) {
             break;
           case 'updatePartnersSalesCount':
             result = updatePartnersSalesCount();
+            break;
+          case 'normalizeAccrualsPhones':
+            result = normalizeAccrualsPhones();
+            break;
+          case 'syncSalesDataToAccruals':
+            result = syncSalesDataToAccruals();
+            break;
+          case 'updateAccrualsData':
+            result = updateAccrualsData();
             break;
           case 'setupSalesCountUpdateTrigger':
             result = setupSalesCountUpdateTrigger();
@@ -1335,6 +1353,185 @@ function generatePromoCode() {
 // ФУНКЦИЯ: ОБНОВЛЕНИЕ КОЛИЧЕСТВА ПРОДАЖ ДЛЯ ПАРТНЕРОВ
 // ==========================================
 
+// ==========================================
+// ФУНКЦИЯ: НОРМАЛИЗАЦИЯ ТЕЛЕФОНОВ В КОЛОНКЕ A ЛИСТА "НАЧИСЛЕНИЯ"
+// ==========================================
+function normalizeAccrualsPhones() {
+  console.log('=== START NORMALIZING ACCRUALS PHONES ===');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const accrualsSheet = ss.getSheetByName('Начисления');
+  
+  if (!accrualsSheet) {
+    console.error('Лист "Начисления" не найден');
+    return { success: false, error: 'Лист "Начисления" не найден' };
+  }
+  
+  const accrualsLastRow = accrualsSheet.getLastRow();
+  if (accrualsLastRow <= 1) {
+    console.log('Нет данных для нормализации');
+    return { success: true, message: 'Нет данных' };
+  }
+  
+  // Структура листа Начисления: A=ID (телефон), B=ID продажи, ...
+  const accrualsData = accrualsSheet.getRange(2, 1, accrualsLastRow - 1, 11).getValues();
+  
+  let updatedCount = 0;
+  
+  accrualsData.forEach((row, index) => {
+    const phone = String(row[0] || '').trim(); // Колонка A - ID (телефон)
+    
+    if (phone) {
+      // Нормализуем телефон: убираем все нецифровые символы, кроме цифр
+      let normalizedPhone = phone.replace(/\D/g, '');
+      
+      // Если номер начинается с 8, заменяем на 7
+      if (normalizedPhone.startsWith('8') && normalizedPhone.length >= 10) {
+        normalizedPhone = '7' + normalizedPhone.substring(1);
+      }
+      
+      // Если номер начинается с +7, убираем +
+      if (normalizedPhone.startsWith('+7')) {
+        normalizedPhone = normalizedPhone.substring(1);
+      }
+      
+      // Если номер не начинается с 7, но имеет 10 цифр, добавляем 7
+      if (!normalizedPhone.startsWith('7') && normalizedPhone.length === 10) {
+        normalizedPhone = '7' + normalizedPhone;
+      }
+      
+      // Если номер не начинается с 7, но имеет 11 цифр и начинается с 8, заменяем на 7
+      if (normalizedPhone.length === 11 && normalizedPhone.startsWith('8')) {
+        normalizedPhone = '7' + normalizedPhone.substring(1);
+      }
+      
+      // Проверяем, изменился ли номер
+      if (normalizedPhone !== phone && normalizedPhone.length >= 10) {
+        accrualsSheet.getRange(index + 2, 1).setValue(normalizedPhone);
+        updatedCount++;
+        console.log(`Normalized phone: ${phone} -> ${normalizedPhone}`);
+      }
+    }
+  });
+  
+  console.log(`Normalized ${updatedCount} phone numbers`);
+  console.log('=== END NORMALIZING ACCRUALS PHONES ===');
+  
+  return { success: true, message: `Нормализовано ${updatedCount} номеров телефонов` };
+}
+
+// ==========================================
+// ФУНКЦИЯ: СИНХРОНИЗАЦИЯ ДАННЫХ ИЗ "ПРОДАЖИ" В "НАЧИСЛЕНИЯ"
+// ==========================================
+function syncSalesDataToAccruals() {
+  console.log('=== START SYNCING SALES DATA TO ACCRUALS ===');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const salesSheet = ss.getSheetByName('Продажи');
+  const accrualsSheet = ss.getSheetByName('Начисления');
+  
+  if (!salesSheet || !accrualsSheet) {
+    console.error('Листы "Продажи" или "Начисления" не найдены');
+    return { success: false, error: 'Листы не найдены' };
+  }
+  
+  // Получаем данные из листа "Продажи"
+  const salesLastRow = salesSheet.getLastRow();
+  if (salesLastRow <= 1) {
+    console.log('Нет продаж для синхронизации');
+    return { success: true, message: 'Нет продаж' };
+  }
+  
+  // Структура листа Продажи: A=ID, B=Количество, C=Сумма, D=Промокод, E=Информация о клиенте, F=Статус, G=Дата продажи
+  const salesData = salesSheet.getRange(2, 1, salesLastRow - 1, 7).getValues();
+  
+  // Создаем словарь для быстрого доступа: { saleId: { quantity, saleDate } }
+  const salesMap = {};
+  salesData.forEach(sale => {
+    const saleId = String(sale[0] || '').trim();
+    const quantity = parseInt(sale[1]) || 0; // Колонка B - Количество
+    const saleDate = sale[6]; // Колонка G - Дата продажи
+    
+    if (saleId) {
+      // Форматируем дату продажи
+      let formattedDate = '';
+      if (saleDate) {
+        try {
+          const dateObj = saleDate instanceof Date ? saleDate : new Date(saleDate);
+          if (!isNaN(dateObj.getTime())) {
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const year = String(dateObj.getFullYear()).slice(-2);
+            formattedDate = `${day}.${month}.${year}`;
+          } else {
+            formattedDate = String(saleDate);
+          }
+        } catch (e) {
+          formattedDate = String(saleDate);
+        }
+      }
+      
+      salesMap[saleId] = {
+        quantity: quantity,
+        saleDate: formattedDate
+      };
+    }
+  });
+  
+  console.log(`Created sales map with ${Object.keys(salesMap).length} entries`);
+  
+  // Получаем данные из листа "Начисления"
+  const accrualsLastRow = accrualsSheet.getLastRow();
+  if (accrualsLastRow <= 1) {
+    console.log('Нет начислений для синхронизации');
+    return { success: true, message: 'Нет начислений' };
+  }
+  
+  // Структура листа Начисления: A=ID, B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных, K=Когда продано
+  const accrualsData = accrualsSheet.getRange(2, 1, accrualsLastRow - 1, 11).getValues();
+  
+  let updatedQuantityCount = 0;
+  let updatedDateCount = 0;
+  
+  accrualsData.forEach((row, index) => {
+    const saleId = String(row[1] || '').trim(); // Колонка B - ID продажи
+    const currentQuantity = row[9]; // Колонка J - Количество проданных (индекс 9)
+    const currentSaleDate = String(row[10] || '').trim(); // Колонка K - Когда продано (индекс 10)
+    
+    if (saleId && salesMap[saleId]) {
+      const salesInfo = salesMap[saleId];
+      let needsUpdate = false;
+      
+      // Обновляем количество проданных (колонка J)
+      if (salesInfo.quantity !== currentQuantity) {
+        accrualsSheet.getRange(index + 2, 10).setValue(salesInfo.quantity); // Колонка J
+        updatedQuantityCount++;
+        needsUpdate = true;
+      }
+      
+      // Обновляем дату продажи (колонка K)
+      if (salesInfo.saleDate && salesInfo.saleDate !== currentSaleDate) {
+        accrualsSheet.getRange(index + 2, 11).setValue(salesInfo.saleDate); // Колонка K
+        updatedDateCount++;
+        needsUpdate = true;
+      }
+      
+      if (needsUpdate) {
+        console.log(`Updated accrual for sale ${saleId}: quantity=${salesInfo.quantity}, date=${salesInfo.saleDate}`);
+      }
+    }
+  });
+  
+  console.log(`Updated ${updatedQuantityCount} quantities and ${updatedDateCount} dates`);
+  console.log('=== END SYNCING SALES DATA TO ACCRUALS ===');
+  
+  return { 
+    success: true, 
+    message: `Обновлено: ${updatedQuantityCount} количеств, ${updatedDateCount} дат` 
+  };
+}
+
+// ==========================================
+// ФУНКЦИЯ: ОБНОВЛЕНИЕ КОЛИЧЕСТВА ПРОДАЖ ДЛЯ ПАРТНЕРОВ
+// ==========================================
 function updatePartnersSalesCount() {
   console.log('=== START UPDATING PARTNERS SALES COUNT ===');
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1406,6 +1603,35 @@ function updatePartnersSalesCount() {
 }
 
 // ==========================================
+// ФУНКЦИЯ: ПОЛНОЕ ОБНОВЛЕНИЕ (НОРМАЛИЗАЦИЯ + СИНХРОНИЗАЦИЯ)
+// ==========================================
+function updateAccrualsData() {
+  console.log('=== START FULL ACCRUALS UPDATE ===');
+  
+  // 1. Нормализуем телефоны
+  const normalizeResult = normalizeAccrualsPhones();
+  console.log('Normalize result:', normalizeResult);
+  
+  // 2. Синхронизируем данные из "Продажи"
+  const syncResult = syncSalesDataToAccruals();
+  console.log('Sync result:', syncResult);
+  
+  // 3. Обновляем количество продаж для партнеров
+  const salesCountResult = updatePartnersSalesCount();
+  console.log('Sales count result:', salesCountResult);
+  
+  console.log('=== END FULL ACCRUALS UPDATE ===');
+  
+  return {
+    success: true,
+    message: 'Обновление завершено',
+    normalize: normalizeResult,
+    sync: syncResult,
+    salesCount: salesCountResult
+  };
+}
+
+// ==========================================
 // ФУНКЦИЯ: НАСТРОЙКА ТРИГГЕРА ДЛЯ АВТОМАТИЧЕСКОГО ОБНОВЛЕНИЯ КОЛИЧЕСТВА ПРОДАЖ
 // ==========================================
 // ВАЖНО: Эта функция должна быть запущена ВРУЧНУЮ один раз в редакторе Apps Script
@@ -1429,20 +1655,21 @@ function setupSalesCountUpdateTrigger() {
     // Удаляем существующие триггеры для этой функции
     const triggers = ScriptApp.getProjectTriggers();
     triggers.forEach(trigger => {
-      if (trigger.getHandlerFunction() === 'updatePartnersSalesCount') {
+      if (trigger.getHandlerFunction() === 'updatePartnersSalesCount' || 
+          trigger.getHandlerFunction() === 'updateAccrualsData') {
         ScriptApp.deleteTrigger(trigger);
         console.log('Deleted existing trigger');
       }
     });
     
-    // Создаем новый триггер на каждую минуту
-    ScriptApp.newTrigger('updatePartnersSalesCount')
+    // Создаем новый триггер на каждую минуту для полного обновления
+    ScriptApp.newTrigger('updateAccrualsData')
       .timeBased()
       .everyMinutes(1)
       .create();
     
-    console.log('Created new trigger for updatePartnersSalesCount (every 1 minute)');
-    return { success: true, message: 'Триггер настроен на обновление каждую минуту' };
+    console.log('Created new trigger for updateAccrualsData (every 1 minute)');
+    return { success: true, message: 'Триггер настроен на обновление каждую минуту (нормализация телефонов + синхронизация данных)' };
   } catch (error) {
     console.error('Error setting up trigger:', error);
     return { success: false, error: 'Ошибка при создании триггера: ' + error.toString() };
