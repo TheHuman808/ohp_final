@@ -84,9 +84,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
       <Navigation currentView={currentView} onViewChange={onViewChange} onLogout={onLogout} />
       
       <div className="p-4 space-y-4">
-        <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4 text-center">
-          <p className="text-yellow-800 font-bold text-lg">🧪 ТЕСТОВАЯ НАДПИСЬ - ПРОВЕРКА ОБНОВЛЕНИЙ</p>
-        </div>
         <Card>
           <CardHeader>
             <CardTitle>Клиенты, купившие по моему промокоду</CardTitle>
