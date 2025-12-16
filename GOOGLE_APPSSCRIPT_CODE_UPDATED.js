@@ -102,6 +102,9 @@ function handleRequest(e) {
         case 'normalizeAccrualsPhones':
           result = normalizeAccrualsPhones();
           break;
+        case 'normalizeSalesData':
+          result = normalizeSalesData();
+          break;
         case 'syncSalesDataToAccruals':
           result = syncSalesDataToAccruals();
           break;
@@ -168,6 +171,9 @@ function handleRequest(e) {
             break;
           case 'normalizeAccrualsPhones':
             result = normalizeAccrualsPhones();
+            break;
+          case 'normalizeSalesData':
+            result = normalizeSalesData();
             break;
           case 'syncSalesDataToAccruals':
             result = syncSalesDataToAccruals();
@@ -1486,6 +1492,157 @@ function normalizeAccrualsPhones() {
 }
 
 // ==========================================
+// ФУНКЦИЯ: НОРМАЛИЗАЦИЯ ДАННЫХ В ЛИСТЕ "ПРОДАЖИ"
+// ==========================================
+function normalizeSalesData() {
+  console.log('=== START NORMALIZING SALES DATA ===');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const salesSheet = ss.getSheetByName('Продажи');
+  
+  if (!salesSheet) {
+    console.error('Лист "Продажи" не найден');
+    return { success: false, error: 'Лист "Продажи" не найден' };
+  }
+  
+  const salesLastRow = salesSheet.getLastRow();
+  if (salesLastRow <= 1) {
+    console.log('Нет данных для нормализации');
+    return { success: true, message: 'Нет данных' };
+  }
+  
+  // Структура листа Продажи: A=ID, B=Количество, C=Сумма, D=Промокод, E=Информация о клиенте, F=Статус, G=Дата продажи
+  const salesData = salesSheet.getRange(2, 1, salesLastRow - 1, 7).getValues();
+  
+  let updatedPhonesCount = 0;
+  let updatedDatesCount = 0;
+  
+  salesData.forEach((row, index) => {
+    const customerInfo = String(row[4] || '').trim(); // Колонка E - Информация о клиенте
+    const saleDate = row[6]; // Колонка G - Дата продажи
+    
+    // НОРМАЛИЗАЦИЯ ТЕЛЕФОНА В КОЛОНКЕ E
+    if (customerInfo) {
+      // Извлекаем телефон из информации о клиенте
+      // Может быть формат: "Имя +79123456789" или просто "89123456789" или "+79123456789"
+      const phoneMatch = customerInfo.match(/(\+?[78]?\d{10,})/);
+      if (phoneMatch) {
+        let phone = phoneMatch[1];
+        let normalizedPhone = phone.replace(/\D/g, ''); // Убираем все нецифровые символы
+        
+        // Нормализуем телефон
+        if (normalizedPhone.startsWith('8') && normalizedPhone.length >= 10) {
+          normalizedPhone = '7' + normalizedPhone.substring(1);
+        }
+        
+        if (!normalizedPhone.startsWith('7') && normalizedPhone.length === 10) {
+          normalizedPhone = '7' + normalizedPhone;
+        }
+        
+        if (normalizedPhone.length === 11 && normalizedPhone.startsWith('8')) {
+          normalizedPhone = '7' + normalizedPhone.substring(1);
+        }
+        
+        // Если телефон изменился, обновляем информацию о клиенте
+        if (normalizedPhone !== phone && normalizedPhone.length >= 10) {
+          // Сохраняем имя, если оно было
+          const nameMatch = customerInfo.match(/^([^0-9+]+)/);
+          const name = nameMatch ? nameMatch[1].trim() : '';
+          
+          // Формируем новую строку: имя + нормализованный телефон
+          const newCustomerInfo = name ? `${name} ${normalizedPhone}` : normalizedPhone;
+          
+          salesSheet.getRange(index + 2, 5).setValue(newCustomerInfo); // Колонка E
+          updatedPhonesCount++;
+          console.log(`Normalized phone in customer info: ${customerInfo} -> ${newCustomerInfo}`);
+        }
+      } else {
+        // Если в строке только телефон (без имени), нормализуем всю строку
+        const cleanPhone = customerInfo.replace(/\D/g, '');
+        if (cleanPhone.length >= 10) {
+          let normalizedPhone = cleanPhone;
+          
+          if (normalizedPhone.startsWith('8') && normalizedPhone.length >= 10) {
+            normalizedPhone = '7' + normalizedPhone.substring(1);
+          }
+          
+          if (!normalizedPhone.startsWith('7') && normalizedPhone.length === 10) {
+            normalizedPhone = '7' + normalizedPhone;
+          }
+          
+          if (normalizedPhone.length === 11 && normalizedPhone.startsWith('8')) {
+            normalizedPhone = '7' + normalizedPhone.substring(1);
+          }
+          
+          if (normalizedPhone !== customerInfo && normalizedPhone.length >= 10) {
+            salesSheet.getRange(index + 2, 5).setValue(normalizedPhone); // Колонка E
+            updatedPhonesCount++;
+            console.log(`Normalized phone: ${customerInfo} -> ${normalizedPhone}`);
+          }
+        }
+      }
+    }
+    
+    // НОРМАЛИЗАЦИЯ ДАТЫ В КОЛОНКЕ G
+    if (saleDate) {
+      try {
+        let dateObj = null;
+        
+        if (saleDate instanceof Date) {
+          dateObj = saleDate;
+        } else {
+          const dateStr = String(saleDate).trim();
+          
+          // Пробуем стандартный парсинг
+          dateObj = new Date(dateStr);
+          
+          if (isNaN(dateObj.getTime())) {
+            // Пробуем парсить формат "December 14, 2025 5:58 am"
+            const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 
+                              'july', 'august', 'september', 'october', 'november', 'december'];
+            const dateMatch = dateStr.match(/(\w+)\s+(\d+),\s+(\d+)/i);
+            if (dateMatch) {
+              const monthName = dateMatch[1].toLowerCase();
+              const day = parseInt(dateMatch[2]);
+              const year = parseInt(dateMatch[3]);
+              const monthIndex = monthNames.indexOf(monthName);
+              if (monthIndex !== -1) {
+                dateObj = new Date(year, monthIndex, day);
+              }
+            }
+          }
+        }
+        
+        // Форматируем дату в формат dd.MM.yy
+        if (dateObj && !isNaN(dateObj.getTime())) {
+          const day = String(dateObj.getDate()).padStart(2, '0');
+          const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const year = String(dateObj.getFullYear()).slice(-2);
+          const formattedDate = `${day}.${month}.${year}`;
+          
+          // Проверяем, нужно ли обновить (если текущее значение не в формате dd.MM.yy)
+          const currentDateStr = String(saleDate).trim();
+          if (currentDateStr !== formattedDate && !/^\d{2}\.\d{2}\.\d{2}$/.test(currentDateStr)) {
+            salesSheet.getRange(index + 2, 7).setValue(formattedDate); // Колонка G
+            updatedDatesCount++;
+            console.log(`Normalized date: ${currentDateStr} -> ${formattedDate}`);
+          }
+        }
+      } catch (e) {
+        console.error(`Error normalizing date for row ${index + 2}:`, e);
+      }
+    }
+  });
+  
+  console.log(`Normalized ${updatedPhonesCount} phones and ${updatedDatesCount} dates`);
+  console.log('=== END NORMALIZING SALES DATA ===');
+  
+  return { 
+    success: true, 
+    message: `Нормализовано: ${updatedPhonesCount} телефонов, ${updatedDatesCount} дат` 
+  };
+}
+
+// ==========================================
 // ФУНКЦИЯ: СИНХРОНИЗАЦИЯ ДАННЫХ ИЗ "ПРОДАЖИ" В "НАЧИСЛЕНИЯ"
 // ==========================================
 function syncSalesDataToAccruals() {
@@ -1674,15 +1831,19 @@ function updatePartnersSalesCount() {
 function updateAccrualsData() {
   console.log('=== START FULL ACCRUALS UPDATE ===');
   
-  // 1. Нормализуем телефоны
-  const normalizeResult = normalizeAccrualsPhones();
-  console.log('Normalize result:', normalizeResult);
+  // 1. Нормализуем данные в листе "Продажи" (телефоны и даты)
+  const normalizeSalesResult = normalizeSalesData();
+  console.log('Normalize sales result:', normalizeSalesResult);
   
-  // 2. Синхронизируем данные из "Продажи"
+  // 2. Нормализуем телефоны в листе "Начисления"
+  const normalizeAccrualsResult = normalizeAccrualsPhones();
+  console.log('Normalize accruals result:', normalizeAccrualsResult);
+  
+  // 3. Синхронизируем данные из "Продажи" в "Начисления"
   const syncResult = syncSalesDataToAccruals();
   console.log('Sync result:', syncResult);
   
-  // 3. Обновляем количество продаж для партнеров
+  // 4. Обновляем количество продаж для партнеров
   const salesCountResult = updatePartnersSalesCount();
   console.log('Sales count result:', salesCountResult);
   
@@ -1691,7 +1852,8 @@ function updateAccrualsData() {
   return {
     success: true,
     message: 'Обновление завершено',
-    normalize: normalizeResult,
+    normalizeSales: normalizeSalesResult,
+    normalizeAccruals: normalizeAccrualsResult,
     sync: syncResult,
     salesCount: salesCountResult
   };
