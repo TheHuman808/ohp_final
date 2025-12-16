@@ -844,9 +844,9 @@ function getPartnerCommissions(telegramId) {
     }
     
     // Структура листа Начисления: 
-    // A=ID, B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных
-    // Читаем все 10 колонок (A-J)
-    const commissionsData = commissionsSheet.getRange(2, 1, lastRow - 1, 10).getValues();
+    // A=ID, B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных, K=Когда продано
+    // Читаем все 11 колонок (A-K), чтобы получить дату продажи из колонки K
+    const commissionsData = commissionsSheet.getRange(2, 1, lastRow - 1, 11).getValues();
     console.log(`Read ${commissionsData.length} rows from Начисления sheet`);
     
     // Нормализуем Telegram ID для поиска
@@ -956,12 +956,18 @@ function getPartnerCommissions(telegramId) {
     }
     
     const commissions = partnerCommissions.map((row, index) => {
-      // Структура листа Начисления: A=ID (информация о клиенте), B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета
-      const accrualId = String(row[0] || '').trim(); // Колонка A - ID (информация о клиенте)
+      // Структура листа Начисления: A=ID (телефон клиента), B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных, K=Когда продано
+      const accrualId = String(row[0] || '').trim(); // Колонка A - ID (телефон клиента)
       const saleId = String(row[1] || '').trim(); // Колонка B - ID продажи
+      const saleDateFromAccruals = String(row[10] || '').trim(); // Колонка K - Когда продано
       
-      // Пробуем найти дату продажи по ID продажи (колонка B)
-      let saleDate = salesDatesMap[saleId] || '';
+      // Приоритет: сначала берем дату из колонки K листа "Начисления" (уже синхронизированная)
+      let saleDate = saleDateFromAccruals || '';
+      
+      // Если нет даты в колонке K, пробуем найти по ID продажи в листе "Продажи"
+      if (!saleDate) {
+        saleDate = salesDatesMap[saleId] || '';
+      }
       
       // Если не нашли по ID продажи, пробуем найти по ID начисления (колонка A), если это ID продажи
       if (!saleDate && accrualId) {
@@ -972,7 +978,9 @@ function getPartnerCommissions(telegramId) {
         console.log(`Mapping commission ${index}:`, {
           accrualId: accrualId,
           saleId: saleId,
-          saleDateFromMap: saleDate,
+          saleDateFromAccruals: saleDateFromAccruals,
+          saleDateFromSales: salesDatesMap[saleId] || '',
+          finalSaleDate: saleDate,
           saleDateExistsBySaleId: !!salesDatesMap[saleId],
           saleDateExistsByAccrualId: !!salesDatesMap[accrualId],
           allSaleIds: Object.keys(salesDatesMap).slice(0, 5),
@@ -1142,8 +1150,8 @@ function getPartnerNetwork(telegramId) {
     };
     
     if (accrualsLastRow > 1) {
-      // Структура листа Начисления: A=ID (информация о клиенте), B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных
-      const accrualsData = accrualsSheet.getRange(2, 1, accrualsLastRow - 1, 10).getValues();
+      // Структура листа Начисления: A=ID (телефон клиента), B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных, K=Когда продано
+      const accrualsData = accrualsSheet.getRange(2, 1, accrualsLastRow - 1, 11).getValues();
       
       // Извлекаем ID продаж из продаж с промокодом
       const saleIds = new Set();
@@ -1223,22 +1231,72 @@ function getPartnerNetwork(telegramId) {
         }
       }
       
+      // НАЙТИ ТЕЛЕФОН КЛИЕНТА ИЗ НАЧИСЛЕНИЙ (колонка A) для правильного матчинга
+      // Ищем начисления для этой продажи, чтобы получить телефон клиента из колонки A
+      let customerPhoneFromAccruals = '';
+      accrualsByLevel[1].concat(accrualsByLevel[2], accrualsByLevel[3], accrualsByLevel[4]).forEach(accrual => {
+        const accrualSaleId = String(accrual[1] || '').trim();
+        if (accrualSaleId === saleId) {
+          const phoneFromAccrual = String(accrual[0] || '').trim(); // Колонка A - телефон клиента
+          if (phoneFromAccrual && phoneFromAccrual.length >= 10) {
+            customerPhoneFromAccruals = phoneFromAccrual;
+          }
+        }
+      });
+      
+      // Используем телефон из начислений, если он есть, иначе из информации о клиенте
+      const finalCustomerPhone = customerPhoneFromAccruals || customerPhone || customerInfo || '';
+      
+      // Нормализуем телефон для матчинга
+      let normalizedFinalPhone = '';
+      if (finalCustomerPhone) {
+        const cleanPhone = finalCustomerPhone.replace(/\D/g, '');
+        if (cleanPhone.length >= 10) {
+          normalizedFinalPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
+        }
+      }
+      
       // Проверяем, является ли клиент партнером (по телефону)
       let isPartner = false;
       let partnerInfo = null;
       
-      if (customerPhone) {
-        const normalizedPhone = customerPhone.length >= 10 ? customerPhone.slice(-10) : customerPhone;
-        const phoneVariants = [normalizedPhone];
-        if (normalizedPhone.length === 10) {
-          phoneVariants.push('7' + normalizedPhone);
-          phoneVariants.push('8' + normalizedPhone);
+      if (normalizedFinalPhone) {
+        const phoneVariants = [normalizedFinalPhone];
+        if (normalizedFinalPhone.length === 10) {
+          phoneVariants.push('7' + normalizedFinalPhone);
+          phoneVariants.push('8' + normalizedFinalPhone);
+        }
+        // Также добавляем полный номер с 7
+        if (normalizedFinalPhone.length === 10) {
+          const fullPhone = '7' + normalizedFinalPhone;
+          phoneVariants.push(fullPhone);
         }
         
         for (const phoneVariant of phoneVariants) {
           if (partnersByPhone[phoneVariant]) {
             isPartner = true;
             partnerInfo = partnersByPhone[phoneVariant];
+            console.log(`Matched customer ${saleId} with partner by phone ${phoneVariant}:`, partnerInfo[2], partnerInfo[3]);
+            break;
+          }
+        }
+      }
+      
+      // Если не нашли по нормализованному телефону, пробуем найти по исходному телефону из начислений
+      if (!isPartner && customerPhoneFromAccruals) {
+        const cleanAccrualPhone = customerPhoneFromAccruals.replace(/\D/g, '');
+        const normalizedAccrualPhone = cleanAccrualPhone.length >= 10 ? cleanAccrualPhone.slice(-10) : cleanAccrualPhone;
+        const accrualPhoneVariants = [normalizedAccrualPhone];
+        if (normalizedAccrualPhone.length === 10) {
+          accrualPhoneVariants.push('7' + normalizedAccrualPhone);
+          accrualPhoneVariants.push('8' + normalizedAccrualPhone);
+        }
+        
+        for (const phoneVariant of accrualPhoneVariants) {
+          if (partnersByPhone[phoneVariant]) {
+            isPartner = true;
+            partnerInfo = partnersByPhone[phoneVariant];
+            console.log(`Matched customer ${saleId} with partner by accrual phone ${phoneVariant}:`, partnerInfo[2], partnerInfo[3]);
             break;
           }
         }
@@ -1262,12 +1320,20 @@ function getPartnerNetwork(telegramId) {
         const customer = {
           id: saleId,
           name: customerName || 'Не указано',
-          phone: customerPhone || customerInfo || 'Не указан',
+          phone: finalCustomerPhone || customerInfo || 'Не указан',
           amount: saleAmount,
           saleDate: formattedSaleDate,
           isPartner: isPartner,
           partnerName: isPartner && partnerInfo ? `${String(partnerInfo[2] || '').trim()} ${String(partnerInfo[3] || '').trim()}`.trim() : null
         };
+        
+        console.log(`Customer for sale ${saleId}:`, {
+          name: customer.name,
+          phone: customer.phone,
+          isPartner: customer.isPartner,
+          partnerName: customer.partnerName,
+          saleDate: customer.saleDate
+        });
         
         customersByLevel[minLevel].push(customer);
       }
