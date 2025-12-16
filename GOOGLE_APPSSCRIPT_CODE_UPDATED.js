@@ -970,14 +970,40 @@ function getPartnerCommissions(telegramId) {
       // Приоритет: сначала берем дату из колонки K листа "Начисления" (уже синхронизированная)
       let saleDate = saleDateFromAccruals || '';
       
-      // Если нет даты в колонке K, пробуем найти по ID продажи в листе "Продажи"
-      if (!saleDate) {
+      // Если дата в колонке K пустая или не в правильном формате, пробуем найти по ID продажи в листе "Продажи"
+      if (!saleDate || saleDate.length === 0) {
         saleDate = salesDatesMap[saleId] || '';
       }
       
       // Если не нашли по ID продажи, пробуем найти по ID начисления (колонка A), если это ID продажи
       if (!saleDate && accrualId) {
         saleDate = salesDatesMap[accrualId] || '';
+      }
+      
+      // Если дата все еще пустая, пробуем получить из листа "Продажи" напрямую
+      if (!saleDate && saleId) {
+        const salesSheet = spreadsheet.getSheetByName('Продажи');
+        if (salesSheet) {
+          const salesLastRow = salesSheet.getLastRow();
+          if (salesLastRow > 1) {
+            const salesData = salesSheet.getRange(2, 1, salesLastRow - 1, 7).getValues();
+            const saleRow = salesData.find(s => String(s[0] || '').trim() === saleId);
+            if (saleRow && saleRow[6]) {
+              const saleDateRaw = saleRow[6];
+              try {
+                let dateObj = saleDateRaw instanceof Date ? saleDateRaw : new Date(saleDateRaw);
+                if (!isNaN(dateObj.getTime())) {
+                  const day = String(dateObj.getDate()).padStart(2, '0');
+                  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                  const year = String(dateObj.getFullYear()).slice(-2);
+                  saleDate = `${day}.${month}.${year}`;
+                }
+              } catch (e) {
+                console.error(`Error parsing date for sale ${saleId}:`, e);
+              }
+            }
+          }
+        }
       }
       
       if (index < 3) {
@@ -1319,30 +1345,45 @@ function getPartnerNetwork(telegramId) {
         });
       });
       
-      // Если есть начисления, добавляем клиента на соответствующий уровень
-      // Если начислений несколько, добавляем на минимальный уровень
+      // ИСПРАВЛЕНО: Показываем всех клиентов, купивших по промокоду, даже если начислений еще нет
+      // Если есть начисления, используем минимальный уровень из начислений
+      // Если начислений нет, добавляем на уровень 1 (прямая продажа по промокоду)
+      const level = accrualsForSale.length > 0 
+        ? Math.min(...accrualsForSale.map(a => a.level))
+        : 1;
+      
+      // Получаем дату продажи из начислений, если она там есть
+      let finalSaleDate = formattedSaleDate;
       if (accrualsForSale.length > 0) {
-        const minLevel = Math.min(...accrualsForSale.map(a => a.level));
-        const customer = {
-          id: saleId,
-          name: customerName || 'Не указано',
-          phone: finalCustomerPhone || customerInfo || 'Не указан',
-          amount: saleAmount,
-          saleDate: formattedSaleDate,
-          isPartner: isPartner,
-          partnerName: isPartner && partnerInfo ? `${String(partnerInfo[2] || '').trim()} ${String(partnerInfo[3] || '').trim()}`.trim() : null
-        };
-        
-        console.log(`Customer for sale ${saleId}:`, {
-          name: customer.name,
-          phone: customer.phone,
-          isPartner: customer.isPartner,
-          partnerName: customer.partnerName,
-          saleDate: customer.saleDate
-        });
-        
-        customersByLevel[minLevel].push(customer);
+        // Берем дату из первого начисления (колонка K)
+        const firstAccrual = accrualsForSale[0].accrual;
+        const saleDateFromAccrual = String(firstAccrual[10] || '').trim(); // Колонка K - Когда продано
+        if (saleDateFromAccrual) {
+          finalSaleDate = saleDateFromAccrual;
+        }
       }
+      
+      const customer = {
+        id: saleId,
+        name: customerName || 'Не указано',
+        phone: finalCustomerPhone || customerInfo || 'Не указан',
+        amount: saleAmount,
+        saleDate: finalSaleDate,
+        isPartner: isPartner,
+        partnerName: isPartner && partnerInfo ? `${String(partnerInfo[2] || '').trim()} ${String(partnerInfo[3] || '').trim()}`.trim() : null
+      };
+      
+      console.log(`Customer for sale ${saleId}:`, {
+        name: customer.name,
+        phone: customer.phone,
+        isPartner: customer.isPartner,
+        partnerName: customer.partnerName,
+        saleDate: customer.saleDate,
+        level: level,
+        hasAccruals: accrualsForSale.length > 0
+      });
+      
+      customersByLevel[level].push(customer);
     });
     
     // Убираем дубликаты клиентов (по ID продажи)
