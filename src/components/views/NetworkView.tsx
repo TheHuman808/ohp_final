@@ -21,56 +21,59 @@ interface NetworkViewProps {
 const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLogout }: NetworkViewProps) => {
   const { levels, loading: levelsLoading, error: levelsError } = useLevelsConfig();
   
-  const renderPartnerCard = (partner: PartnerRecord) => {
+  const renderCustomerCard = (customer: any) => {
     try {
-      const totalEarnings = partner.totalEarnings || 0;
-      // Формируем имя: Имя + первая буква фамилии (если есть)
-      const lastNameInitial = partner.lastName && partner.lastName.trim() ? partner.lastName.trim()[0].toUpperCase() + '.' : '';
-      const displayName = `${partner.firstName || ''} ${lastNameInitial}`.trim();
-      
-      if (!partner || !partner.id) {
+      if (!customer || !customer.id) {
         return (
           <div className="bg-white p-3 rounded-lg border border-red-200">
-            <p className="text-red-600 text-sm">Ошибка: неверные данные партнера</p>
+            <p className="text-red-600 text-sm">Ошибка: неверные данные клиента</p>
           </div>
         );
       }
       
       return (
-        <div key={partner.id || partner.telegramId} className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
-          <div className="flex items-center gap-2">
-            <User className="w-5 h-5 text-gray-500" />
-            <span className="font-semibold text-base">{displayName || 'Без имени'}</span>
+        <div key={customer.id} className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <User className="w-5 h-5 text-gray-500" />
+              <span className="font-semibold text-base">{customer.name || 'Не указано'}</span>
+            </div>
+            {customer.isPartner && (
+              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                Партнер
+              </span>
+            )}
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
               <Phone className="w-4 h-4 text-blue-600" />
-              <span className="font-medium text-gray-800">{partner.phone || 'не указан'}</span>
+              <span className="font-medium text-gray-800">{customer.phone || 'не указан'}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Mail className="w-4 h-4 text-blue-600" />
-              <span className="font-medium text-gray-800 break-all">{partner.email || 'не указан'}</span>
-            </div>
-            {partner.username && (
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">Username:</span> @{partner.username}
-              </div>
-            )}
             <div className="pt-2 border-t border-gray-200 space-y-1">
               <p className="text-xs text-gray-500">
-                <span className="font-medium">Промокод:</span> <code className="bg-gray-100 px-2 py-1 rounded text-xs">{partner.promoCode || 'не указан'}</code>
+                <span className="font-medium">ID покупки:</span> <code className="bg-gray-100 px-2 py-1 rounded text-xs">{customer.id}</code>
               </p>
               <p className="text-xs text-gray-500">
-                <span className="font-medium">Доход:</span> <span className="text-green-600 font-semibold">₽{totalEarnings.toLocaleString('ru-RU')}</span>
+                <span className="font-medium">Сумма:</span> <span className="text-green-600 font-semibold">₽{(customer.amount || 0).toLocaleString('ru-RU')}</span>
               </p>
+              {customer.saleDate && (
+                <p className="text-xs text-gray-500">
+                  <span className="font-medium">Дата:</span> {customer.saleDate}
+                </p>
+              )}
+              {customer.partnerName && (
+                <p className="text-xs text-gray-500">
+                  <span className="font-medium">Партнер:</span> {customer.partnerName}
+                </p>
+              )}
             </div>
           </div>
         </div>
       );
     } catch (error) {
       return (
-        <div key={partner.id} className="bg-white p-3 rounded-lg border border-gray-200">
-          <p className="text-red-600 text-sm">Ошибка отображения данных партнера</p>
+        <div key={customer.id} className="bg-white p-3 rounded-lg border border-gray-200">
+          <p className="text-red-600 text-sm">Ошибка отображения данных клиента</p>
         </div>
       );
     }
@@ -83,7 +86,7 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
       <div className="p-4 space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Моя партнерская сеть</CardTitle>
+            <CardTitle>Клиенты, купившие по моему промокоду</CardTitle>
           </CardHeader>
           <CardContent>
             {networkLoading ? (
@@ -121,15 +124,15 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
                           </div>
                           {levelDataArray.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                              {levelDataArray.map((partner, index) => (
-                                <div key={`${partner.telegramId}-${index}`}>
-                                  {renderPartnerCard(partner)}
+                              {levelDataArray.map((customer, index) => (
+                                <div key={`${customer.id}-${index}`}>
+                                  {renderCustomerCard(customer)}
                                 </div>
                               ))}
                             </div>
                           ) : (
                             <p className="text-gray-500 text-center py-4">
-                              Пока нет партнеров на этом уровне
+                              Пока нет клиентов на этом уровне
                             </p>
                           )}
                         </div>
@@ -178,3 +181,4 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
 };
 
 export default NetworkView;
+

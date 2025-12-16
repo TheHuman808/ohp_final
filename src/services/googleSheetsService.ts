@@ -504,46 +504,41 @@ class GoogleSheetsService {
           console.log('Level 3 count:', networkData.level3?.length || 0);
           console.log('Level 4 count:', networkData.level4?.length || 0);
           
-          // Маппим данные из Apps Script в формат PartnerRecord с обработкой ошибок
-          const mapPartner = (partner: any, index: number): PartnerRecord | null => {
+          // Маппим данные из Apps Script - теперь это клиенты, а не партнеры
+          const mapCustomer = (customer: any, index: number): any => {
             try {
-              if (!partner) {
-                console.warn(`Partner at index ${index} is null or undefined`);
+              if (!customer) {
+                console.warn(`Customer at index ${index} is null or undefined`);
                 return null;
               }
               
-              const mapped: PartnerRecord = {
-                id: String(partner.id || ''),
-                telegramId: String(partner.telegramId || '').trim(),
-                firstName: String(partner.firstName || '').trim(),
-                lastName: String(partner.lastName || '').trim(),
-                phone: String(partner.phone || '').trim(),
-                email: String(partner.email || '').trim(),
-                username: partner.username ? String(partner.username).trim() : undefined,
-                promoCode: String(partner.promoCode || '').trim(),
-                inviterCode: partner.inviterCode ? String(partner.inviterCode).trim() : undefined,
-                inviterTelegramId: partner.inviterTelegramId ? String(partner.inviterTelegramId).trim() : undefined,
-                registrationDate: String(partner.registrationDate || '').trim(),
-                totalEarnings: parseFloat(String(partner.totalEarnings || '0')) || 0,
-                salesCount: parseInt(String(partner.salesCount || '0')) || 0
+              // Структура клиента: { id, name, phone, amount, saleDate, isPartner, partnerName }
+              const mapped = {
+                id: String(customer.id || ''),
+                name: String(customer.name || 'Не указано').trim(),
+                phone: String(customer.phone || '').trim(),
+                amount: parseFloat(String(customer.amount || '0')) || 0,
+                saleDate: String(customer.saleDate || '').trim(),
+                isPartner: Boolean(customer.isPartner || false),
+                partnerName: customer.partnerName ? String(customer.partnerName).trim() : undefined
               };
               
               if (index < 3) {
-                console.log(`Mapped partner ${index}:`, mapped);
+                console.log(`Mapped customer ${index}:`, mapped);
               }
               
               return mapped;
             } catch (error) {
-              console.error(`Error mapping partner at index ${index}:`, error, partner);
+              console.error(`Error mapping customer at index ${index}:`, error, customer);
               return null;
             }
           };
           
           const network: NetworkData = {
-            level1: (networkData.level1 || []).map((p: any, i: number) => mapPartner(p, i)).filter((p: PartnerRecord | null): p is PartnerRecord => p !== null),
-            level2: (networkData.level2 || []).map((p: any, i: number) => mapPartner(p, i)).filter((p: PartnerRecord | null): p is PartnerRecord => p !== null),
-            level3: (networkData.level3 || []).map((p: any, i: number) => mapPartner(p, i)).filter((p: PartnerRecord | null): p is PartnerRecord => p !== null),
-            level4: (networkData.level4 || []).map((p: any, i: number) => mapPartner(p, i)).filter((p: PartnerRecord | null): p is PartnerRecord => p !== null)
+            level1: (networkData.level1 || []).map((c: any, i: number) => mapCustomer(c, i)).filter((c: any) => c !== null),
+            level2: (networkData.level2 || []).map((c: any, i: number) => mapCustomer(c, i)).filter((c: any) => c !== null),
+            level3: (networkData.level3 || []).map((c: any, i: number) => mapCustomer(c, i)).filter((c: any) => c !== null),
+            level4: (networkData.level4 || []).map((c: any, i: number) => mapCustomer(c, i)).filter((c: any) => c !== null)
           };
           
           console.log('Mapped network data:', network);
