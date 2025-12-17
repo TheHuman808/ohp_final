@@ -165,24 +165,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
       {onLogout && (
         <div className="bg-white border-t border-gray-200 p-4 md:hidden relative z-10 min-h-[60px]">
           <Button
-            variant="secondary"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              try {
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.reload();
-              } catch (err) {
-                console.error('Cache clear error', err);
-              }
-            }}
-            className="w-full mb-3"
-            style={{ touchAction: 'manipulation', pointerEvents: 'auto' }}
-          >
-            Очистить кеш
-          </Button>
-          <Button
             variant="outline"
             onClick={(e) => {
               e.preventDefault();
@@ -196,30 +178,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
           >
             <LogOut className="w-4 h-4 mr-2" />
             Выйти
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const confirmed = window.confirm('Удалить аккаунт из приложения? Данные на устройстве будут очищены.');
-              if (!confirmed) return;
-              try {
-                localStorage.clear();
-                sessionStorage.clear();
-              } catch (err) {
-                console.error('Account delete (local) error', err);
-              }
-              if (onLogout) {
-                onLogout();
-              } else {
-                window.location.reload();
-              }
-            }}
-            className="w-full mt-3"
-            style={{ touchAction: 'manipulation', pointerEvents: 'auto' }}
-          >
-            Удалить аккаунт
           </Button>
         </div>
       )}

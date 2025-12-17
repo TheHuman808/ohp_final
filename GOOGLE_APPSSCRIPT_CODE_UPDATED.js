@@ -331,7 +331,8 @@ function importOrdersToSalesSheet() {
       if (!orderId || orderId.toString().trim() === "") return null;
 
       const dateVal = row[FIELD_INDICES.COL_DATE - 1];          
-      const totalVal = row[FIELD_INDICES.ORDER_TOTAL - 1];      // исходная сумма с доставкой (не используем напрямую)
+      const totalValRaw = row[FIELD_INDICES.ORDER_TOTAL - 1];   // исходная сумма (может содержать доставку/скидки)
+      const totalVal = parseAmount(totalValRaw);
       const promoEmailVal = row[FIELD_INDICES.COL_PROMO_OR_EMAIL - 1];
       const noteVal = row[FIELD_INDICES.COL_NOTE - 1];
       const productNameQty = row[FIELD_INDICES.PRODUCT_NAME_QTY - 1]; // Q - Product name(QTY)(SKU) (индекс 16, так как массив начинается с 0)
@@ -351,17 +352,24 @@ function importOrdersToSalesSheet() {
       }
 
       // Считаем сумму без доставки: 4000 за единицу без промокода, 3500 с промокодом.
-      // Если не смогли извлечь количество, считаем как 1 единицу.
-      const quantitySafe = quantity > 0 ? quantity : 1;
-      const amountCalculated = calcAmountByPromo(quantitySafe, promoEmailVal, totalVal);
+      // Если не смогли извлечь количество, пытаемся определить по сумме / цене за штуку.
       const promoNormalized = String(promoEmailVal || '').trim().toUpperCase();
+      const pricePerUnit = promoNormalized && !promoNormalized.includes('@') ? 3500 : 4000;
+      let quantitySafe = quantity > 0 ? quantity : 0;
+      if (quantitySafe === 0 && totalVal > 0 && pricePerUnit > 0) {
+        quantitySafe = Math.max(1, Math.round(totalVal / pricePerUnit));
+      }
+      if (quantitySafe === 0) {
+        quantitySafe = 1;
+      }
+      const amountCalculated = totalVal > 0 ? totalVal : calcAmountByPromo(quantitySafe, promoEmailVal, totalVal);
       console.log(`  Calculated amount for order ${orderId}:`, amountCalculated, 'promoRaw:', promoEmailVal, 'promoNormalized:', promoNormalized);
       
       // Правильная структура: ID, Количество, Сумма, Промокод, Информация о клиенте, Статус, Дата продажи
       return [
         orderId,         // ID
-        quantity,        // Количество (извлечено из Product name(QTY)(SKU))
-        amountCalculated, // Сумма без доставки (фиксированная 3500/4000 за штуку)
+        quantitySafe,    // Количество (извлечено из Product name(QTY)(SKU) или рассчитано по сумме)
+        amountCalculated, // Сумма без доставки (или исходная, если она ниже)
         promoNormalized, // Промокод
         noteVal,         // Информация о клиенте
         sheetName,       // Статус
