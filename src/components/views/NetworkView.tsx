@@ -197,6 +197,30 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
             <LogOut className="w-4 h-4 mr-2" />
             Выйти
           </Button>
+          <Button
+            variant="destructive"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const confirmed = window.confirm('Удалить аккаунт из приложения? Данные на устройстве будут очищены.');
+              if (!confirmed) return;
+              try {
+                localStorage.clear();
+                sessionStorage.clear();
+              } catch (err) {
+                console.error('Account delete (local) error', err);
+              }
+              if (onLogout) {
+                onLogout();
+              } else {
+                window.location.reload();
+              }
+            }}
+            className="w-full mt-3"
+            style={{ touchAction: 'manipulation', pointerEvents: 'auto' }}
+          >
+            Удалить аккаунт
+          </Button>
         </div>
       )}
     </div>
