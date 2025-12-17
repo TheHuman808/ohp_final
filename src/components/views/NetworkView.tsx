@@ -55,7 +55,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
         ? (usernameRaw.startsWith('@') ? usernameRaw : `@${usernameRaw}`)
         : 'нет';
       const rawObject = JSON.stringify(customer, null, 2);
-      const rawObject = JSON.stringify(customer, null, 2);
 
       return (
         <div key={customer.id} className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
