@@ -362,9 +362,10 @@ function importOrdersToSalesSheet() {
       if (quantitySafe === 0) {
         quantitySafe = 1;
       }
-      // Всегда считаем сумму как pricePerUnit * quantitySafe (без доставки), чтобы не тянуть доставку и любые скидки/округления
-      const amountCalculated = pricePerUnit * quantitySafe;
-      console.log(`  Calculated amount for order ${orderId}:`, amountCalculated, 'quantitySafe:', quantitySafe, 'promoRaw:', promoEmailVal, 'promoNormalized:', promoNormalized);
+      const calculatedByRule = pricePerUnit * quantitySafe;
+      // Если исходная сумма (totalVal) меньше рассчитанной — используем исходную, чтобы не завышать (скидки/доставка).
+      const amountCalculated = totalVal > 0 ? Math.min(totalVal, calculatedByRule) : calculatedByRule;
+      console.log(`  Calculated amount for order ${orderId}:`, amountCalculated, 'quantitySafe:', quantitySafe, 'promoRaw:', promoEmailVal, 'promoNormalized:', promoNormalized, 'totalValRaw:', totalValRaw, 'calculatedByRule:', calculatedByRule);
       
       // Правильная структура: ID, Количество, Сумма, Промокод, Информация о клиенте, Статус, Дата продажи
       return [
