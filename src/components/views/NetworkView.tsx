@@ -20,6 +20,7 @@ interface NetworkViewProps {
 
 const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLogout }: NetworkViewProps) => {
   const { levels, loading: levelsLoading, error: levelsError } = useLevelsConfig();
+  const networkDebug = JSON.stringify(network || {}, null, 2);
   
   const renderCustomerCard = (customer: any) => {
     try {
@@ -108,6 +109,10 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
       <Navigation currentView={currentView} onViewChange={onViewChange} onLogout={onLogout} />
       
       <div className="p-4 space-y-4">
+        <div className="border border-amber-200 bg-amber-50 text-amber-900 rounded-md px-3 py-2 text-xs whitespace-pre-wrap break-all">
+          <div className="font-semibold mb-1">Debug (network object):</div>
+          {networkDebug}
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>Клиенты, купившие по моему промокоду</CardTitle>
