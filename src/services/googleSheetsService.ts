@@ -520,7 +520,7 @@ class GoogleSheetsService {
                 return null;
               }
               
-              // Структура клиента: { id, name, phone, amount, saleDate, isPartner, partnerName, registrationDate }
+              // Структура клиента: { id, name, phone, amount, saleDate, isPartner, partnerName, registrationDate, totalOrdersCount }
               const mapped = {
                 id: String(customer.id || ''),
                 name: String(customer.name || customer.partnerName || 'Не указано').trim(),
@@ -529,7 +529,10 @@ class GoogleSheetsService {
                 saleDate: String(customer.saleDate || '').trim(),
                 isPartner: Boolean(customer.isPartner || false),
                 partnerName: customer.partnerName ? String(customer.partnerName).trim() : undefined,
-                registrationDate: customer.registrationDate ? String(customer.registrationDate).trim() : undefined
+                registrationDate: customer.registrationDate ? String(customer.registrationDate).trim() : undefined,
+                totalOrdersCount: typeof customer.totalOrdersCount === 'number'
+                  ? customer.totalOrdersCount
+                  : (String(customer.id || '').trim() ? String(customer.id || '').split(',').filter((s: string) => s.trim()).length : 0)
               };
               
               if (index < 3) {
