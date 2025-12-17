@@ -95,10 +95,16 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
           </div>
         </div>
       );
-    } catch (error) {
+    } catch (error: any) {
       return (
         <div key={customer.id} className="bg-white p-3 rounded-lg border border-gray-200">
           <p className="text-red-600 text-sm">Ошибка отображения данных клиента</p>
+          <p className="text-xs text-gray-700 mt-1">
+            {error?.message ? `Сообщение: ${error.message}` : 'Без сообщения'}
+          </p>
+          <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded text-[11px] text-gray-700 whitespace-pre-wrap break-all">
+            {JSON.stringify(customer, null, 2)}
+          </div>
         </div>
       );
     }
