@@ -362,8 +362,9 @@ function importOrdersToSalesSheet() {
       if (quantitySafe === 0) {
         quantitySafe = 1;
       }
-      const amountCalculated = totalVal > 0 ? totalVal : calcAmountByPromo(quantitySafe, promoEmailVal, totalVal);
-      console.log(`  Calculated amount for order ${orderId}:`, amountCalculated, 'promoRaw:', promoEmailVal, 'promoNormalized:', promoNormalized);
+      // Всегда считаем сумму как pricePerUnit * quantitySafe (без доставки), чтобы не тянуть доставку и любые скидки/округления
+      const amountCalculated = pricePerUnit * quantitySafe;
+      console.log(`  Calculated amount for order ${orderId}:`, amountCalculated, 'quantitySafe:', quantitySafe, 'promoRaw:', promoEmailVal, 'promoNormalized:', promoNormalized);
       
       // Правильная структура: ID, Количество, Сумма, Промокод, Информация о клиенте, Статус, Дата продажи
       return [
