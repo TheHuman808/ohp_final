@@ -430,6 +430,15 @@ function calculateCommissions() {
     return { success: false, error: 'Не все листы найдены (Продажи, Партнеры, Настройки, Начисления)' };
   }
 
+  // Хелпер для сумм: убирает пробелы и запятые
+  function parseAmountSafe(value) {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return value;
+    const normalized = String(value).replace(/\s/g, '').replace(',', '.');
+    const num = parseFloat(normalized);
+    return isNaN(num) ? 0 : num;
+  }
+
   // --- ШАГ 1: ПОЛУЧЕНИЕ НАСТРОЕК (УРОВНИ И ПРОЦЕНТЫ) ---
   const settingsLastRow = settingsSheet.getLastRow();
   let levels = {};
@@ -546,8 +555,9 @@ function calculateCommissions() {
 
   salesData.forEach((sale) => {
     const saleId = String(sale[0] || '').trim();           // A - ID
-    const saleQuantity = parseInt(sale[1]) || 0;           // B - Количество (не используется в расчете комиссий, но доступно)
-    const saleSum = parseFloat(sale[2]) || 0;              // C - Сумма
+    const saleQuantityRaw = parseInt(sale[1]) || 0;        // B - Количество
+    const saleSumRaw = sale[2];                            // C - Сумма
+    let saleSum = parseAmountSafe(saleSumRaw);
     const salePromo = String(sale[3] || '').trim();        // D - Промокод
     const customerInfo = String(sale[4] || '').trim();     // E - Информация о клиенте
     const saleStatus = String(sale[5] || '').trim();       // F - Статус
@@ -651,8 +661,18 @@ function calculateCommissions() {
         const uniqueKey = `${saleId}_${beneficiaryTgId}_${level}`;
         
         if (!existingAccruals.has(uniqueKey)) {
+          // Уточняем количество: если 0, пытаемся вывести из суммы и цены за штуку
+          let quantity = salesQuantityMap[saleId] || saleQuantityRaw || 0;
+          if (quantity === 0) {
+            const pricePerUnit = salePromo && !salePromo.includes('@') ? 3500 : 4000;
+            if (pricePerUnit > 0 && saleSum > 0) {
+              quantity = Math.max(1, Math.round(saleSum / pricePerUnit));
+            }
+          }
+          if (quantity === 0) quantity = 1;
+
+          // Комиссия всегда от реальной суммы продажи (saleSum уже очищен от пробелов/запятых)
           const commissionAmount = saleSum * percentage;
-          const quantity = salesQuantityMap[saleId] || 0; // Получаем количество из словаря
           
           // Структура листа Начисления: 
           // A=ID, B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных
