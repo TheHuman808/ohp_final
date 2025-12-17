@@ -257,16 +257,16 @@ function importOrdersToSalesSheet() {
     // Ищем паттерн (число) в первой паре скобок
     // Пример: "Инуловит(1)()" -> извлекаем "1"
     // Используем глобальный поиск и берем первое совпадение
-    const matches = str.match(/\((\d+)\)/g);
+    const matches = str.match(/\((\d+(?:[.,]\d+)?)\)/g);
     console.log('extractQuantity: все совпадения:', matches);
     
     if (matches && matches.length > 0) {
       // Берем первое совпадение и извлекаем число
       const firstMatch = matches[0];
       console.log('extractQuantity: первое совпадение:', firstMatch);
-      const numberMatch = firstMatch.match(/\d+/);
+      const numberMatch = firstMatch.match(/[\d.,]+/);
       if (numberMatch && numberMatch[0]) {
-        const quantity = parseInt(numberMatch[0], 10) || 0;
+        const quantity = parseInt(numberMatch[0].replace(',', '.'), 10) || 0;
         console.log('extractQuantity: извлечено количество:', quantity);
         return quantity;
       }
@@ -275,13 +275,24 @@ function importOrdersToSalesSheet() {
     // Альтернативный способ: ищем любую пару скобок с числом внутри
     const altMatch = str.match(/\((\d+)\)/);
     if (altMatch && altMatch[1]) {
-      const quantity = parseInt(altMatch[1], 10) || 0;
+      const quantity = parseInt(altMatch[1].replace(',', '.'), 10) || 0;
       console.log('extractQuantity (альтернативный способ): извлечено количество:', quantity);
       return quantity;
     }
     
     console.log('extractQuantity: количество не найдено, возвращаем 0');
     console.log('extractQuantity: строка для анализа:', JSON.stringify(str));
+    return 0;
+  }
+
+  function calcAmountByPromo(quantity, rawPromoOrEmail) {
+    const promoRaw = String(rawPromoOrEmail || '').trim();
+    const looksLikePromo = promoRaw && !promoRaw.includes('@');
+    const hasPromo = looksLikePromo;
+    const pricePerUnit = hasPromo ? 3500 : 4000;
+    if (quantity && quantity > 0) {
+      return pricePerUnit * quantity;
+    }
     return 0;
   }
 
@@ -306,8 +317,8 @@ function importOrdersToSalesSheet() {
       if (!orderId || orderId.toString().trim() === "") return null;
 
       const dateVal = row[FIELD_INDICES.COL_DATE - 1];          
-      const totalVal = row[FIELD_INDICES.ORDER_TOTAL - 1];      
-      const promoEmailVal = row[FIELD_INDICES.COL_PROMO_OR_EMAIL - 1]; 
+      const totalVal = row[FIELD_INDICES.ORDER_TOTAL - 1];      // исходная сумма с доставкой (не используем напрямую)
+      const promoEmailVal = row[FIELD_INDICES.COL_PROMO_OR_EMAIL - 1];
       const noteVal = row[FIELD_INDICES.COL_NOTE - 1];
       const productNameQty = row[FIELD_INDICES.PRODUCT_NAME_QTY - 1]; // Q - Product name(QTY)(SKU) (индекс 16, так как массив начинается с 0)
       
@@ -324,13 +335,18 @@ function importOrdersToSalesSheet() {
       if (quantity === 0 && productNameQty) {
         console.warn(`  WARNING: Quantity is 0 but productNameQty is not empty: "${productNameQty}"`);
       }
+
+      // Считаем сумму без доставки: 4000 за единицу без промокода, 3500 с промокодом
+      const amountCalculated = calcAmountByPromo(quantity, promoEmailVal);
+      const promoNormalized = String(promoEmailVal || '').trim().toUpperCase();
+      console.log(`  Calculated amount for order ${orderId}:`, amountCalculated, 'promoRaw:', promoEmailVal, 'promoNormalized:', promoNormalized);
       
       // Правильная структура: ID, Количество, Сумма, Промокод, Информация о клиенте, Статус, Дата продажи
       return [
         orderId,         // ID
         quantity,        // Количество (извлечено из Product name(QTY)(SKU))
-        totalVal,        // Сумма
-        promoEmailVal,   // Промокод
+        amountCalculated || totalVal || 0, // Сумма без доставки (если quantity не найден — падаем обратно на исходное значение)
+        promoNormalized, // Промокод
         noteVal,         // Информация о клиенте
         sheetName,       // Статус
         dateVal          // Дата продажи
@@ -1137,22 +1153,28 @@ function getPartnerNetwork(telegramId) {
     // Структура листа Партнеры: A=ID, B=Telegram ID, C=Имя, D=Фамилия, E=Телефон, F=Email, G=Username, H=Промокод, I=Код пригласившего, J=Telegram ID пригласившего, K=Дата регистрации, L=Общий доход, M=Количество продаж
     const partnersData = partnersSheet.getRange(2, 1, partnersLastRow - 1, 13).getValues();
     
+  function normalizePhone(phone) {
+    const clean = String(phone || '').replace(/\D/g, '');
+    let normalized = clean;
+    if (normalized.startsWith('8') && normalized.length >= 10) {
+      normalized = '7' + normalized.substring(1);
+    }
+    if (!normalized.startsWith('7') && normalized.length === 10) {
+      normalized = '7' + normalized;
+    }
+    if (normalized.startsWith('+7')) {
+      normalized = normalized.substring(1);
+    }
+    return normalized;
+  }
+
     // Создаем индекс партнеров по телефону (колонка E)
     const partnersByPhone = {};
     partnersData.forEach(row => {
       const phone = String(row[4] || '').trim(); // Колонка E - Телефон
       if (phone && phone.length >= 7) {
         // Нормализуем телефон
-        const cleanPhone = phone.replace(/\D/g, '');
-        let normalizedPhone = cleanPhone;
-        
-        // Приводим к формату с 7
-        if (normalizedPhone.startsWith('8') && normalizedPhone.length >= 10) {
-          normalizedPhone = '7' + normalizedPhone.substring(1);
-        }
-        if (!normalizedPhone.startsWith('7') && normalizedPhone.length === 10) {
-          normalizedPhone = '7' + normalizedPhone;
-        }
+      const normalizedPhone = normalizePhone(phone);
         
         // Добавляем в индекс с разными вариантами
         const last10 = normalizedPhone.length >= 10 ? normalizedPhone.slice(-10) : normalizedPhone;
@@ -1230,30 +1252,18 @@ function getPartnerNetwork(telegramId) {
       }
       
       // Нормализуем телефон клиента
-      const cleanPhone = customerPhone.replace(/\D/g, '');
-      let normalizedPhone = cleanPhone;
-      
-      if (normalizedPhone.startsWith('8') && normalizedPhone.length >= 10) {
-        normalizedPhone = '7' + normalizedPhone.substring(1);
-      }
-      if (!normalizedPhone.startsWith('7') && normalizedPhone.length === 10) {
-        normalizedPhone = '7' + normalizedPhone;
-      }
-      
+      let normalizedPhone = normalizePhone(customerPhone);
       const last10 = normalizedPhone.length >= 10 ? normalizedPhone.slice(-10) : normalizedPhone;
       
       // Ищем партнера по телефону
-      let partnerInfo = null;
-      const phoneVariants = [normalizedPhone, last10];
-      if (last10.length === 10) {
-        phoneVariants.push('7' + last10);
-        phoneVariants.push('8' + last10);
-      }
-      
-      for (const phoneVariant of phoneVariants) {
-        if (partnersByPhone[phoneVariant]) {
-          partnerInfo = partnersByPhone[phoneVariant];
-          break;
+      let partnerInfo = findPartnerByPhone(normalizedPhone);
+
+      // Если не нашли по телефону из начислений, пробуем вытащить телефон из sales.customerInfo
+      if (!partnerInfo && salesMap[saleId] && salesMap[saleId].customerInfo) {
+        const phoneFromCustomer = extractPhoneFromCustomerInfo(salesMap[saleId].customerInfo);
+        if (phoneFromCustomer) {
+          normalizedPhone = phoneFromCustomer;
+          partnerInfo = findPartnerByPhone(phoneFromCustomer);
         }
       }
       
@@ -1527,6 +1537,33 @@ function normalizeSalesData() {
           }
         }
       }
+
+  function findPartnerByPhone(phone) {
+    const normalizedPhone = normalizePhone(phone);
+    const last10 = normalizedPhone.length >= 10 ? normalizedPhone.slice(-10) : normalizedPhone;
+    const variants = [normalizedPhone, last10];
+    if (last10.length === 10) {
+      variants.push('7' + last10, '8' + last10);
+    }
+    for (const variant of variants) {
+      if (partnersByPhone[variant]) {
+        return partnersByPhone[variant];
+      }
+    }
+    return null;
+  }
+
+  function extractPhoneFromCustomerInfo(info) {
+    if (!info) return '';
+    const match = String(info).match(/(\+?[78]?\d{10,})/);
+    return match ? normalizePhone(match[1]) : '';
+  }
+
+  function extractNameFromCustomerInfo(info) {
+    if (!info) return '';
+    const withoutPhone = String(info).replace(/(\+?[78]?\d{10,})/g, '').trim();
+    return withoutPhone || '';
+  }
     }
     
     // НОРМАЛИЗАЦИЯ ДАТЫ В КОЛОНКЕ G
