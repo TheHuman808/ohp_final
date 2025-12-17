@@ -1169,6 +1169,14 @@ function getPartnerNetwork(telegramId) {
     // Структура листа Партнеры: A=ID, B=Telegram ID, C=Имя, D=Фамилия, E=Телефон, F=Email, G=Username, H=Промокод, I=Код пригласившего, J=Telegram ID пригласившего, K=Дата регистрации, L=Общий доход, M=Количество продаж
     const partnersData = partnersSheet.getRange(2, 1, partnersLastRow - 1, 13).getValues();
     
+  function parseAmount(value) {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return value;
+    const normalized = String(value).replace(/\s/g, '').replace(',', '.');
+    const num = parseFloat(normalized);
+    return isNaN(num) ? 0 : num;
+  }
+
   function normalizePhone(phone) {
     const clean = String(phone || '').replace(/\D/g, '');
     let normalized = clean;
@@ -1234,7 +1242,7 @@ function getPartnerNetwork(telegramId) {
             }
             salesMap[saleId] = {
               promoCode: String(sale[3] || '').trim().toUpperCase(),
-              amount: parseFloat(sale[2]) || 0,
+              amount: parseAmount(sale[2]),
               customerInfo: String(sale[4] || '').trim(),
               saleDate: saleDateFormatted
             };
@@ -1269,9 +1277,9 @@ function getPartnerNetwork(telegramId) {
       const saleId = String(accrual[1] || '').trim(); // Колонка B - ID продажи
       const level = parseInt(accrual[3]) || 0; // Колонка D - Уровень
       let saleDate = String(accrual[10] || '').trim(); // Колонка K - Когда продано
-      const accrualAmount = parseFloat(accrual[4]) || 0; // Колонка E - Сумма
+      const accrualAmount = parseAmount(accrual[4]); // Колонка E - Сумма
       const saleInfo = salesMap[saleId] || {};
-      const amount = accrualAmount > 0 ? accrualAmount : (parseFloat(saleInfo.amount) || 0);
+      const amount = accrualAmount > 0 ? accrualAmount : parseAmount(saleInfo.amount);
       if (!saleDate && saleInfo.saleDate) {
         saleDate = saleInfo.saleDate;
       }

@@ -505,6 +505,14 @@ class GoogleSheetsService {
           console.log('Level 4 count:', networkData.level4?.length || 0);
           
           // Маппим данные из Apps Script - теперь это клиенты, а не партнеры
+          const parseAmountSafe = (val: any): number => {
+            if (val === null || val === undefined) return 0;
+            if (typeof val === 'number') return val;
+            const normalized = String(val).replace(/\s/g, '').replace(',', '.');
+            const num = parseFloat(normalized);
+            return isNaN(num) ? 0 : num;
+          };
+
           const mapCustomer = (customer: any, index: number): any => {
             try {
               if (!customer) {
@@ -517,7 +525,7 @@ class GoogleSheetsService {
                 id: String(customer.id || ''),
                 name: String(customer.name || customer.partnerName || 'Не указано').trim(),
                 phone: String(customer.phone || '').trim(),
-                amount: parseFloat(String(customer.amount || '0')) || 0,
+                amount: parseAmountSafe(customer.amount),
                 saleDate: String(customer.saleDate || '').trim(),
                 isPartner: Boolean(customer.isPartner || false),
                 partnerName: customer.partnerName ? String(customer.partnerName).trim() : undefined,
