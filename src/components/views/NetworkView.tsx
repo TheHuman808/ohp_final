@@ -116,6 +116,9 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
       <Navigation currentView={currentView} onViewChange={onViewChange} onLogout={onLogout} />
       
       <div className="p-4 space-y-4">
+        <div className="border border-yellow-400 bg-yellow-50 text-yellow-800 rounded-md px-3 py-2 text-sm font-semibold">
+          ТЕСТ!!
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>Клиенты, купившие по моему промокоду</CardTitle>
