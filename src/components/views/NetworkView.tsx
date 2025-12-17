@@ -165,6 +165,24 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
       {onLogout && (
         <div className="bg-white border-t border-gray-200 p-4 md:hidden relative z-10 min-h-[60px]">
           <Button
+            variant="secondary"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              try {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.reload();
+              } catch (err) {
+                console.error('Cache clear error', err);
+              }
+            }}
+            className="w-full mb-3"
+            style={{ touchAction: 'manipulation', pointerEvents: 'auto' }}
+          >
+            Очистить кеш
+          </Button>
+          <Button
             variant="outline"
             onClick={(e) => {
               e.preventDefault();
