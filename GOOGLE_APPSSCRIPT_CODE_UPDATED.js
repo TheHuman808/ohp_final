@@ -1215,10 +1215,28 @@ function getPartnerNetwork(telegramId) {
         salesData.forEach(sale => {
           const saleId = String(sale[0] || '').trim();
           if (saleId) {
+            const saleDateRaw = sale[6];
+            let saleDateFormatted = '';
+            if (saleDateRaw) {
+              try {
+                const dateObj = saleDateRaw instanceof Date ? saleDateRaw : new Date(saleDateRaw);
+                if (!isNaN(dateObj.getTime())) {
+                  const day = String(dateObj.getDate()).padStart(2, '0');
+                  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                  const year = String(dateObj.getFullYear()).slice(-2);
+                  saleDateFormatted = `${day}.${month}.${year}`;
+                } else {
+                  saleDateFormatted = String(saleDateRaw);
+                }
+              } catch (e) {
+                saleDateFormatted = String(saleDateRaw);
+              }
+            }
             salesMap[saleId] = {
               promoCode: String(sale[3] || '').trim().toUpperCase(),
               amount: parseFloat(sale[2]) || 0,
-              customerInfo: String(sale[4] || '').trim()
+              customerInfo: String(sale[4] || '').trim(),
+              saleDate: saleDateFormatted
             };
           }
         });
@@ -1250,8 +1268,13 @@ function getPartnerNetwork(telegramId) {
       const customerPhone = String(accrual[0] || '').trim(); // Колонка A - ID (телефон клиента)
       const saleId = String(accrual[1] || '').trim(); // Колонка B - ID продажи
       const level = parseInt(accrual[3]) || 0; // Колонка D - Уровень
-      const saleDate = String(accrual[10] || '').trim(); // Колонка K - Когда продано
-      const amount = parseFloat(accrual[4]) || 0; // Колонка E - Сумма
+      let saleDate = String(accrual[10] || '').trim(); // Колонка K - Когда продано
+      const accrualAmount = parseFloat(accrual[4]) || 0; // Колонка E - Сумма
+      const saleInfo = salesMap[saleId] || {};
+      const amount = accrualAmount > 0 ? accrualAmount : (parseFloat(saleInfo.amount) || 0);
+      if (!saleDate && saleInfo.saleDate) {
+        saleDate = saleInfo.saleDate;
+      }
       
       if (!customerPhone || level < 1 || level > 4) {
         return;
@@ -1275,8 +1298,8 @@ function getPartnerNetwork(telegramId) {
       let partnerInfo = findPartnerByPhone(normalizedPhone);
 
       // Если не нашли по телефону из начислений, пробуем вытащить телефон из sales.customerInfo
-      if (!partnerInfo && salesMap[saleId] && salesMap[saleId].customerInfo) {
-        const phoneFromCustomer = extractPhoneFromCustomerInfo(salesMap[saleId].customerInfo);
+      if (!partnerInfo && saleInfo && saleInfo.customerInfo) {
+        const phoneFromCustomer = extractPhoneFromCustomerInfo(saleInfo.customerInfo);
         if (phoneFromCustomer) {
           normalizedPhone = phoneFromCustomer;
           partnerInfo = findPartnerByPhone(phoneFromCustomer);
@@ -1311,8 +1334,7 @@ function getPartnerNetwork(telegramId) {
           console.log(`Added partner to level ${level}:`, customer.name, customer.phone, `Sale ID: ${saleId}`);
         } else {
           // Если партнер не найден - показываем как клиента с телефоном
-          const saleInfo = salesMap[saleId] || {};
-          const customerName = saleInfo.customerInfo ? saleInfo.customerInfo.replace(/\d/g, '').trim() : 'Клиент';
+          const customerName = saleInfo.customerInfo ? extractNameFromCustomerInfo(saleInfo.customerInfo) : 'Клиент';
           
           const customer = {
             id: saleId || normalizedPhone,
