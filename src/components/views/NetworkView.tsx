@@ -39,9 +39,22 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
         typeof customer.totalOrdersCount === "number"
           ? customer.totalOrdersCount
           : orderIds.length;
-      const amountValue = Number(customer.amount) || 0;
-      const nameValue = (customer.name || '').trim() || 'Не указано';
+      const firstNameValue =
+        (customer.firstName ||
+          (customer.name ? String(customer.name).split(' ')[0] : '') ||
+          '').trim() || 'Не указано';
       const phoneValue = (customer.phone || '').trim() || 'не указан';
+      const usernameRaw =
+        (customer.username ||
+          customer.telegramUsername ||
+          customer.telegram_username ||
+          customer.tgUsername ||
+          customer.tg_username ||
+          '').toString().trim();
+      const usernameValue = usernameRaw
+        ? (usernameRaw.startsWith('@') ? usernameRaw : `@${usernameRaw}`)
+        : 'нет';
+      const rawObject = JSON.stringify(customer, null, 2);
       const rawObject = JSON.stringify(customer, null, 2);
 
       return (
@@ -64,29 +77,17 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
             </div>
             <div className="pt-2 border-t border-gray-200 space-y-1">
               <p className="text-xs text-gray-500">
-                <span className="font-medium">Сумма:</span>{" "}
-                <span className="text-green-600 font-semibold">
-                  ₽{amountValue.toLocaleString("ru-RU")}
-                </span>
+                <span className="font-medium">Имя:</span> {firstNameValue}
+              </p>
+              <p className="text-xs text-gray-500">
+                <span className="font-medium">Телефон:</span> {phoneValue}
+              </p>
+              <p className="text-xs text-gray-500">
+                <span className="font-medium">Username:</span> {usernameValue}
               </p>
               <p className="text-xs text-gray-500">
                 <span className="font-medium">Покупок:</span> {ordersCount}
               </p>
-              {customer.saleDate && (
-                <p className="text-xs text-gray-500">
-                  <span className="font-medium">Дата:</span> {customer.saleDate}
-                </p>
-              )}
-              {customer.partnerName && (
-                <p className="text-xs text-gray-500">
-                  <span className="font-medium">Партнер:</span> {customer.partnerName}
-                </p>
-              )}
-              {customer.registrationDate && (
-                <p className="text-xs text-gray-500">
-                  <span className="font-medium">Дата регистрации:</span> {customer.registrationDate}
-                </p>
-              )}
               <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded text-[11px] text-gray-700 whitespace-pre-wrap break-all">
                 {rawObject}
               </div>
@@ -205,5 +206,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
 };
 
 export default NetworkView;
+
 
 
