@@ -128,7 +128,7 @@ function handleRequest(e) {
       if (!action) {
         // GET запрос без action - просто проверка работоспособности
         result = { success: true, message: 'Google Apps Script is working' };
-      } else {
+    } else {
         let data = {};
         if (dataParam) {
           try {
@@ -695,8 +695,8 @@ function calculateCommissions() {
             console.log(`Sale ${saleId}: Accrual up-to-date for partner ${beneficiaryTgId} at level ${level}`);
           }
         } else {
-          const today = new Date();
-          const dateStr = Utilities.formatDate(today, Session.getScriptTimeZone(), 'dd.MM.yyyy');
+          // Дату расчета оставляем пустой (заполняется вручную)
+          const dateStr = '';
           
           newAccruals.push([
             customerInfo || saleId,     // A: ID (информация о клиенте или ID продажи)
@@ -942,13 +942,13 @@ function getPartnerCommissions(telegramId) {
       const match = rowTgId === searchTgId;
       if (match) {
         console.log('Found matching commission row:', {
-          id: row[0],
-          saleId: row[1],
+      id: row[0],
+      saleId: row[1],
           tgId: row[2],
-          level: row[3],
-          amount: row[4],
+      level: row[3],
+      amount: row[4],
           percentage: row[5],
-          date: row[6]
+      date: row[6]
         });
       }
       return match;
@@ -1321,21 +1321,37 @@ function getPartnerNetwork(telegramId) {
     console.log('Current partner promo code:', currentPromoCode);
     
     // Агрегируем покупки по телефону клиента (для суммарной суммы и списка ID покупок)
-    const phoneAggregates = {}; // { normalizedPhone: { saleIds: Set, totalAmount: number } }
+    const phoneAggregates = {}; // { normalizedPhone: { saleIds: Set, totalAmount: number, fullName: string, registrationDate: string } }
     partnerAccruals.forEach(accrual => {
       const customerPhoneRaw = String(accrual[0] || '').trim();
       const saleIdAgg = String(accrual[1] || '').trim();
       const normalizedPhoneAgg = normalizePhone(customerPhoneRaw);
       const saleInfoAgg = saleIdAgg ? salesMap[saleIdAgg] || {} : {};
-      const saleAmountAgg = parseAmountSafe(saleInfoAgg.amount);
+      const saleAmountAgg = parseAmountSafe(saleInfoAgg.amount) || 0;
+      const accrualAmountAgg = parseAmountSafe(accrual[4]) || 0; // Колонка E
+      const addAmount = saleAmountAgg > 0 ? saleAmountAgg : accrualAmountAgg;
+      
+      // Пытаемся найти ФИО и дату регистрации по телефону из листа «Партнеры»
+      let aggName = '';
+      let aggRegDate = '';
+      const partnerRowByPhone = partnersByPhone[normalizedPhoneAgg] || partnersByPhone[customerPhoneRaw];
+      if (partnerRowByPhone) {
+        const firstNameAgg = String(partnerRowByPhone[2] || '').trim();
+        const lastNameAgg = String(partnerRowByPhone[3] || '').trim();
+        aggName = `${firstNameAgg} ${lastNameAgg}`.trim();
+        aggRegDate = String(partnerRowByPhone[10] || '').trim();
+      }
+      
       if (normalizedPhoneAgg) {
         if (!phoneAggregates[normalizedPhoneAgg]) {
-          phoneAggregates[normalizedPhoneAgg] = { saleIds: new Set(), totalAmount: 0 };
+          phoneAggregates[normalizedPhoneAgg] = { saleIds: new Set(), totalAmount: 0, fullName: aggName, registrationDate: aggRegDate };
         }
         if (saleIdAgg) phoneAggregates[normalizedPhoneAgg].saleIds.add(saleIdAgg);
-        if (!isNaN(saleAmountAgg) && saleAmountAgg > 0) {
-          phoneAggregates[normalizedPhoneAgg].totalAmount += saleAmountAgg;
+        if (addAmount > 0) {
+          phoneAggregates[normalizedPhoneAgg].totalAmount += addAmount;
         }
+        if (aggName) phoneAggregates[normalizedPhoneAgg].fullName = aggName;
+        if (aggRegDate) phoneAggregates[normalizedPhoneAgg].registrationDate = aggRegDate;
       }
     });
     
@@ -1393,6 +1409,9 @@ function getPartnerNetwork(telegramId) {
         const agg = phoneAggregates[normalizedPhone] || null;
         const saleIdsString = agg ? Array.from(agg.saleIds).filter(Boolean).join(', ') : saleId;
         const totalSaleAmount = agg ? agg.totalAmount : amount;
+        const fullNameAgg = agg && agg.fullName ? agg.fullName : null;
+        const registrationDateAgg = agg && agg.registrationDate ? agg.registrationDate : '';
+        const totalOrdersCount = agg ? agg.saleIds.size : (saleId ? 1 : 0);
         
         if (partnerInfo) {
           // Если найден партнер - используем данные из листа "Партнеры"
@@ -1403,13 +1422,14 @@ function getPartnerNetwork(telegramId) {
           
           const customer = {
             id: saleIdsString || saleId || normalizedPhone,
-            name: `${firstName} ${lastName}`.trim() || 'Не указано',
+            name: (fullNameAgg || `${firstName} ${lastName}`).trim() || 'Не указано',
             phone: partnerPhone || normalizedPhone,
             amount: totalSaleAmount || amount,
             saleDate: saleDate || '',
             isPartner: true,
-            partnerName: `${firstName} ${lastName}`.trim(),
-            registrationDate: registrationDate
+            partnerName: (fullNameAgg || `${firstName} ${lastName}`).trim(),
+            registrationDate: registrationDate || registrationDateAgg,
+            totalOrdersCount
           };
           
           networkByLevel[level].push(customer);
@@ -1426,7 +1446,8 @@ function getPartnerNetwork(telegramId) {
             saleDate: saleDate || '',
             isPartner: false,
             partnerName: null,
-            registrationDate: ''
+            registrationDate: registrationDateAgg,
+            totalOrdersCount
           };
           
           networkByLevel[level].push(customer);
