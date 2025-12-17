@@ -44,16 +44,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
           (customer.name ? String(customer.name).split(' ')[0] : '') ||
           '').trim() || 'Не указано';
       const phoneValue = (customer.phone || '').trim() || 'не указан';
-      const usernameRaw =
-        (customer.username ||
-          customer.telegramUsername ||
-          customer.telegram_username ||
-          customer.tgUsername ||
-          customer.tg_username ||
-          '').toString().trim();
-      const usernameValue = usernameRaw
-        ? (usernameRaw.startsWith('@') ? usernameRaw : `@${usernameRaw}`)
-        : 'нет';
       const rawObject = JSON.stringify(customer, null, 2);
 
       return (
@@ -82,9 +72,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
                 <span className="font-medium">Телефон:</span> {phoneValue}
               </p>
               <p className="text-xs text-gray-500">
-                <span className="font-medium">Username:</span> {usernameValue}
-              </p>
-              <p className="text-xs text-gray-500">
                 <span className="font-medium">Покупок:</span> {ordersCount}
               </p>
               <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded text-[11px] text-gray-700 whitespace-pre-wrap break-all">
@@ -94,7 +81,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
                 <p className="font-semibold text-gray-700">Инфо:</p>
                 <p><span className="font-medium">Имя:</span> {firstNameValue}</p>
                 <p><span className="font-medium">Телефон:</span> {phoneValue}</p>
-                <p><span className="font-medium">Username:</span> {usernameValue}</p>
                 <p><span className="font-medium">Кол-во покупок:</span> {ordersCount}</p>
               </div>
             </div>
@@ -115,9 +101,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
       <Navigation currentView={currentView} onViewChange={onViewChange} onLogout={onLogout} />
       
       <div className="p-4 space-y-4">
-        <div className="border border-yellow-400 bg-yellow-50 text-yellow-800 rounded-md px-3 py-2 text-sm font-semibold">
-          ТЕСТ!!
-        </div>
         <Card>
           <CardHeader>
             <CardTitle>Клиенты, купившие по моему промокоду</CardTitle>
