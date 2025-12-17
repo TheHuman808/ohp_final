@@ -44,7 +44,16 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
           (customer.name ? String(customer.name).split(' ')[0] : '') ||
           '').trim() || 'Не указано';
       const phoneValue = (customer.phone || '').trim() || 'не указан';
-      const rawObject = JSON.stringify(customer, null, 2);
+      const usernameRaw =
+        (customer.username ||
+          customer.telegramUsername ||
+          customer.telegram_username ||
+          customer.tgUsername ||
+          customer.tg_username ||
+          '').toString().trim();
+      const usernameValue = usernameRaw
+        ? (usernameRaw.startsWith('@') ? usernameRaw : `@${usernameRaw}`)
+        : 'нет';
 
       return (
         <div key={customer.id} className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
@@ -69,20 +78,14 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
                 <span className="font-medium">Имя:</span> {firstNameValue}
               </p>
               <p className="text-xs text-gray-500">
+                <span className="font-medium">Username:</span> {usernameValue}
+              </p>
+              <p className="text-xs text-gray-500">
                 <span className="font-medium">Телефон:</span> {phoneValue}
               </p>
               <p className="text-xs text-gray-500">
                 <span className="font-medium">Покупок:</span> {ordersCount}
               </p>
-              <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded text-[11px] text-gray-700 whitespace-pre-wrap break-all">
-                {rawObject}
-              </div>
-              <div className="mt-3 rounded border border-blue-100 bg-blue-50 p-2 text-xs text-gray-800 space-y-1">
-                <p className="font-semibold text-gray-700">Инфо:</p>
-                <p><span className="font-medium">Имя:</span> {firstNameValue}</p>
-                <p><span className="font-medium">Телефон:</span> {phoneValue}</p>
-                <p><span className="font-medium">Кол-во покупок:</span> {ordersCount}</p>
-              </div>
             </div>
           </div>
         </div>
