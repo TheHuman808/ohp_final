@@ -39,6 +39,7 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
         typeof customer.totalOrdersCount === "number"
           ? customer.totalOrdersCount
           : orderIds.length;
+      const saleIdsValue = orderIds.join(", ");
       const amountValue = Number(customer.amount) || 0;
       const nameValue = (customer.name || '').trim() || 'Не указано';
       const phoneValue = (customer.phone || '').trim() || 'не указан';
@@ -93,6 +94,11 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
               <p className="text-xs text-gray-500">
                 <span className="font-medium">Статус:</span> {statusValue}
               </p>
+              {saleIdsValue && (
+                <p className="text-xs text-gray-500 break-words whitespace-pre-wrap">
+                  <span className="font-medium">ID покупок:</span> {saleIdsValue}
+                </p>
+              )}
             </div>
           </div>
         </div>
