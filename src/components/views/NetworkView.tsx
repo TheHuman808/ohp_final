@@ -42,15 +42,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
       const saleIdsValue = orderIds.join(", ");
       const amountValue = Number(customer.amount) || 0; // not shown, kept for potential future debug
       const phoneValue = (customer.phone || '').trim() || 'не указан';
-      const tgUsernameRaw =
-        (customer.username ||
-          customer.telegramUsername ||
-          customer.telegram_username ||
-          customer.tgUsername ||
-          customer.tg_username ||
-          '').toString().trim();
-      const tgIdValue =
-        tgUsernameRaw ? (tgUsernameRaw.startsWith('@') ? tgUsernameRaw : `@${tgUsernameRaw}`) : 'нет';
       const saleDateValue = (customer.saleDate || '').trim();
       const registrationDateValue = (customer.registrationDate || '').trim();
       const partnerNameValue = (customer.partnerName || '').trim();
@@ -74,9 +65,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
               <span className="font-medium text-gray-800">{phoneValue}</span>
             </div>
             <div className="pt-2 border-t border-gray-200 space-y-1">
-              <p className="text-xs text-gray-500">
-                <span className="font-medium">Telegram ID:</span> {tgIdValue}
-              </p>
               <p className="text-xs text-gray-500">
                 <span className="font-medium">Покупок:</span> {ordersCount}
               </p>
