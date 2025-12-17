@@ -1301,7 +1301,8 @@ function getPartnerNetwork(telegramId) {
       // Для уровней 2-4 это продажи от партнеров, которых пригласил текущий партнер
       if (level === 1) {
         const saleInfo = salesMap[saleId];
-        if (saleInfo && saleInfo.promoCode !== currentPromoCode) {
+        // Отфильтровываем только если в продаже явно указан промокод и он отличается
+        if (saleInfo && saleInfo.promoCode && saleInfo.promoCode !== currentPromoCode) {
           console.log(`Sale ${saleId} has promo code ${saleInfo.promoCode}, not ${currentPromoCode}, skipping for level 1`);
           return; // Пропускаем продажи не по промокоду текущего партнера для уровня 1
         }
