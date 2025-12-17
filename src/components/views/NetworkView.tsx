@@ -42,6 +42,7 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
       const amountValue = Number(customer.amount) || 0;
       const nameValue = (customer.name || '').trim() || 'Не указано';
       const phoneValue = (customer.phone || '').trim() || 'не указан';
+      const rawObject = JSON.stringify(customer, null, 2);
 
       return (
         <div key={customer.id} className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
@@ -86,6 +87,9 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
                   <span className="font-medium">Дата регистрации:</span> {customer.registrationDate}
                 </p>
               )}
+              <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded text-[11px] text-gray-700 whitespace-pre-wrap break-all">
+                {rawObject}
+              </div>
             </div>
           </div>
         </div>
