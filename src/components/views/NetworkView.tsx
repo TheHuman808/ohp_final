@@ -39,12 +39,9 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
         typeof customer.totalOrdersCount === "number"
           ? customer.totalOrdersCount
           : orderIds.length;
-      const saleIdsValue = orderIds.join(", ");
-      const amountValue = Number(customer.amount) || 0; // not shown, kept for potential future debug
+      const amountValue = Number(customer.amount) || 0;
+      const nameValue = (customer.name || '').trim() || 'Не указано';
       const phoneValue = (customer.phone || '').trim() || 'не указан';
-      const saleDateValue = (customer.saleDate || '').trim();
-      const registrationDateValue = (customer.registrationDate || '').trim();
-      const partnerNameValue = (customer.partnerName || '').trim();
 
       return (
         <div key={customer.id} className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
@@ -66,21 +63,27 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
             </div>
             <div className="pt-2 border-t border-gray-200 space-y-1">
               <p className="text-xs text-gray-500">
+                <span className="font-medium">Сумма:</span>{" "}
+                <span className="text-green-600 font-semibold">
+                  ₽{amountValue.toLocaleString("ru-RU")}
+                </span>
+              </p>
+              <p className="text-xs text-gray-500">
                 <span className="font-medium">Покупок:</span> {ordersCount}
               </p>
-              {saleDateValue && (
+              {customer.saleDate && (
                 <p className="text-xs text-gray-500">
-                  <span className="font-medium">Последняя покупка:</span> {saleDateValue}
+                  <span className="font-medium">Дата:</span> {customer.saleDate}
                 </p>
               )}
-              {partnerNameValue && (
+              {customer.partnerName && (
                 <p className="text-xs text-gray-500">
-                  <span className="font-medium">Имя в партнёрке:</span> {partnerNameValue}
+                  <span className="font-medium">Партнер:</span> {customer.partnerName}
                 </p>
               )}
-              {registrationDateValue && (
+              {customer.registrationDate && (
                 <p className="text-xs text-gray-500">
-                  <span className="font-medium">Дата регистрации:</span> {registrationDateValue}
+                  <span className="font-medium">Дата регистрации:</span> {customer.registrationDate}
                 </p>
               )}
             </div>
