@@ -336,8 +336,10 @@ function importOrdersToSalesSheet() {
         console.warn(`  WARNING: Quantity is 0 but productNameQty is not empty: "${productNameQty}"`);
       }
 
-      // Считаем сумму без доставки: 4000 за единицу без промокода, 3500 с промокодом
-      const amountCalculated = calcAmountByPromo(quantity, promoEmailVal);
+      // Считаем сумму без доставки: 4000 за единицу без промокода, 3500 с промокодом.
+      // Если не смогли извлечь количество, считаем как 1 единицу.
+      const quantitySafe = quantity > 0 ? quantity : 1;
+      const amountCalculated = calcAmountByPromo(quantitySafe, promoEmailVal);
       const promoNormalized = String(promoEmailVal || '').trim().toUpperCase();
       console.log(`  Calculated amount for order ${orderId}:`, amountCalculated, 'promoRaw:', promoEmailVal, 'promoNormalized:', promoNormalized);
       
@@ -345,7 +347,7 @@ function importOrdersToSalesSheet() {
       return [
         orderId,         // ID
         quantity,        // Количество (извлечено из Product name(QTY)(SKU))
-        amountCalculated || totalVal || 0, // Сумма без доставки (если quantity не найден — падаем обратно на исходное значение)
+        amountCalculated, // Сумма без доставки (фиксированная 3500/4000 за штуку)
         promoNormalized, // Промокод
         noteVal,         // Информация о клиенте
         sheetName,       // Статус
