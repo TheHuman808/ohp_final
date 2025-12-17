@@ -86,6 +86,10 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
               <p className="text-xs text-gray-500">
                 <span className="font-medium">Покупок:</span> {ordersCount}
               </p>
+              <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-2 text-[11px] text-gray-800 whitespace-pre-wrap break-all">
+                <p className="font-semibold text-amber-800 mb-1">Debug:</p>
+                {JSON.stringify(customer, null, 2)}
+              </div>
             </div>
           </div>
         </div>
