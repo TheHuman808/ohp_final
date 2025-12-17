@@ -31,12 +31,24 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
         );
       }
       
+      const orderIds = String(customer.id || '')
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+      const ordersCount =
+        typeof customer.totalOrdersCount === "number"
+          ? customer.totalOrdersCount
+          : orderIds.length;
+      const amountValue = Number(customer.amount) || 0;
+      const nameValue = (customer.name || '').trim() || 'Не указано';
+      const phoneValue = (customer.phone || '').trim() || 'не указан';
+
       return (
         <div key={customer.id} className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <User className="w-5 h-5 text-gray-500" />
-              <span className="font-semibold text-base">{customer.name || 'Не указано'}</span>
+              <span className="font-semibold text-base">{nameValue}</span>
             </div>
             {customer.isPartner && (
               <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
@@ -47,7 +59,7 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
               <Phone className="w-4 h-4 text-blue-600" />
-              <span className="font-medium text-gray-800">{customer.phone || 'не указан'}</span>
+              <span className="font-medium text-gray-800">{phoneValue}</span>
             </div>
             <div className="pt-2 border-t border-gray-200 space-y-1">
               <p className="text-xs text-gray-500">
@@ -59,14 +71,12 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
               <p className="text-xs text-gray-500">
                 <span className="font-medium">Сумма:</span>{" "}
                 <span className="text-green-600 font-semibold">
-                  ₽{(customer.amount || 0).toLocaleString("ru-RU")}
+                  ₽{amountValue.toLocaleString("ru-RU")}
                 </span>
               </p>
-              {customer.totalOrdersCount !== undefined && (
-                <p className="text-xs text-gray-500">
-                  <span className="font-medium">Покупок:</span> {customer.totalOrdersCount}
-                </p>
-              )}
+              <p className="text-xs text-gray-500">
+                <span className="font-medium">Покупок:</span> {ordersCount}
+              </p>
               {customer.saleDate && (
                 <p className="text-xs text-gray-500">
                   <span className="font-medium">Дата:</span> {customer.saleDate}
