@@ -1192,22 +1192,31 @@ function getPartnerNetwork(telegramId) {
     return normalized;
   }
 
+  function buildPhoneVariants(phone) {
+    const variants = new Set();
+    const raw = String(phone || '').trim();
+    const clean = raw.replace(/\D/g, '');
+    const normalized = normalizePhone(raw);
+    const last10 = normalized.length >= 10 ? normalized.slice(-10) : normalized;
+
+    [raw, clean, normalized].forEach(p => { if (p) variants.add(p); });
+    if (last10) variants.add(last10);
+    if (last10.length === 10) {
+      variants.add('7' + last10);
+      variants.add('8' + last10);
+      variants.add('+7' + last10);
+    }
+    return Array.from(variants);
+  }
+
     // Создаем индекс партнеров по телефону (колонка E)
     const partnersByPhone = {};
     partnersData.forEach(row => {
       const phone = String(row[4] || '').trim(); // Колонка E - Телефон
       if (phone && phone.length >= 7) {
-        // Нормализуем телефон
-      const normalizedPhone = normalizePhone(phone);
-        
-        // Добавляем в индекс с разными вариантами
-        const last10 = normalizedPhone.length >= 10 ? normalizedPhone.slice(-10) : normalizedPhone;
-        partnersByPhone[normalizedPhone] = row;
-        partnersByPhone[last10] = row;
-        if (last10.length === 10) {
-          partnersByPhone['7' + last10] = row;
-          partnersByPhone['8' + last10] = row;
-        }
+        buildPhoneVariants(phone).forEach(variant => {
+          partnersByPhone[variant] = row;
+        });
       }
     });
     
