@@ -512,15 +512,16 @@ class GoogleSheetsService {
                 return null;
               }
               
-              // Структура клиента: { id, name, phone, amount, saleDate, isPartner, partnerName }
+              // Структура клиента: { id, name, phone, amount, saleDate, isPartner, partnerName, registrationDate }
               const mapped = {
                 id: String(customer.id || ''),
-                name: String(customer.name || 'Не указано').trim(),
+                name: String(customer.name || customer.partnerName || 'Не указано').trim(),
                 phone: String(customer.phone || '').trim(),
                 amount: parseFloat(String(customer.amount || '0')) || 0,
                 saleDate: String(customer.saleDate || '').trim(),
                 isPartner: Boolean(customer.isPartner || false),
-                partnerName: customer.partnerName ? String(customer.partnerName).trim() : undefined
+                partnerName: customer.partnerName ? String(customer.partnerName).trim() : undefined,
+                registrationDate: customer.registrationDate ? String(customer.registrationDate).trim() : undefined
               };
               
               if (index < 3) {

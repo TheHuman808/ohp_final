@@ -66,6 +66,11 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
                   <span className="font-medium">Партнер:</span> {customer.partnerName}
                 </p>
               )}
+              {customer.registrationDate && (
+                <p className="text-xs text-gray-500">
+                  <span className="font-medium">Дата регистрации:</span> {customer.registrationDate}
+                </p>
+              )}
             </div>
           </div>
         </div>
