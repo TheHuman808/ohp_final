@@ -1321,7 +1321,7 @@ function getPartnerNetwork(telegramId) {
     console.log('Current partner promo code:', currentPromoCode);
     
     // Агрегируем покупки по телефону клиента (для суммарной суммы и списка ID покупок)
-    const phoneAggregates = {}; // { normalizedPhone: { saleIds: Set, totalAmount: number, fullName: string, registrationDate: string } }
+    const phoneAggregates = {}; // { normalizedPhone: { saleIds: Set, totalAmount: number, fullName: string, registrationDate: string, lastSaleDate: string } }
     partnerAccruals.forEach(accrual => {
       const customerPhoneRaw = String(accrual[0] || '').trim();
       const saleIdAgg = String(accrual[1] || '').trim();
@@ -1330,6 +1330,7 @@ function getPartnerNetwork(telegramId) {
       const saleAmountAgg = parseAmountSafe(saleInfoAgg.amount) || 0;
       const accrualAmountAgg = parseAmountSafe(accrual[4]) || 0; // Колонка E
       const addAmount = saleAmountAgg > 0 ? saleAmountAgg : accrualAmountAgg;
+      const saleDateAgg = saleInfoAgg.saleDate || '';
       
       // Пытаемся найти ФИО и дату регистрации по телефону из листа «Партнеры»
       let aggName = '';
@@ -1344,7 +1345,7 @@ function getPartnerNetwork(telegramId) {
       
       if (normalizedPhoneAgg) {
         if (!phoneAggregates[normalizedPhoneAgg]) {
-          phoneAggregates[normalizedPhoneAgg] = { saleIds: new Set(), totalAmount: 0, fullName: aggName, registrationDate: aggRegDate };
+          phoneAggregates[normalizedPhoneAgg] = { saleIds: new Set(), totalAmount: 0, fullName: aggName, registrationDate: aggRegDate, lastSaleDate: '' };
         }
         if (saleIdAgg) phoneAggregates[normalizedPhoneAgg].saleIds.add(saleIdAgg);
         if (addAmount > 0) {
@@ -1352,6 +1353,9 @@ function getPartnerNetwork(telegramId) {
         }
         if (aggName) phoneAggregates[normalizedPhoneAgg].fullName = aggName;
         if (aggRegDate) phoneAggregates[normalizedPhoneAgg].registrationDate = aggRegDate;
+        if (saleDateAgg) {
+          phoneAggregates[normalizedPhoneAgg].lastSaleDate = saleDateAgg;
+        }
       }
     });
     
@@ -1408,7 +1412,10 @@ function getPartnerNetwork(telegramId) {
         addedEntries.add(uniqueKey);
         const agg = phoneAggregates[normalizedPhone] || null;
         const saleIdsString = agg ? Array.from(agg.saleIds).filter(Boolean).join(', ') : saleId;
-        const totalSaleAmount = agg ? agg.totalAmount : amount;
+      const totalSaleAmount = agg ? agg.totalAmount : amount;
+      const lastSaleDate = agg && agg.lastSaleDate ? agg.lastSaleDate : (saleDate || '');
+      const aggFullName = agg && agg.fullName ? agg.fullName : null;
+      const aggRegistrationDate = agg && agg.registrationDate ? agg.registrationDate : registrationDateAgg;
         const fullNameAgg = agg && agg.fullName ? agg.fullName : null;
         const registrationDateAgg = agg && agg.registrationDate ? agg.registrationDate : '';
         const totalOrdersCount = agg ? agg.saleIds.size : (saleId ? 1 : 0);
@@ -1422,13 +1429,13 @@ function getPartnerNetwork(telegramId) {
           
           const customer = {
             id: saleIdsString || saleId || normalizedPhone,
-            name: (fullNameAgg || `${firstName} ${lastName}`).trim() || 'Не указано',
+            name: (fullNameAgg || aggFullName || `${firstName} ${lastName}`).trim() || 'Не указано',
             phone: partnerPhone || normalizedPhone,
             amount: totalSaleAmount || amount,
-            saleDate: saleDate || '',
+            saleDate: lastSaleDate || saleDate || '',
             isPartner: true,
-            partnerName: (fullNameAgg || `${firstName} ${lastName}`).trim(),
-            registrationDate: registrationDate || registrationDateAgg,
+            partnerName: (fullNameAgg || aggFullName || `${firstName} ${lastName}`).trim(),
+            registrationDate: registrationDate || aggRegistrationDate,
             totalOrdersCount
           };
           
@@ -1440,13 +1447,13 @@ function getPartnerNetwork(telegramId) {
           
           const customer = {
             id: saleIdsString || saleId || normalizedPhone,
-            name: customerName || 'Клиент',
+            name: customerName || aggFullName || 'Клиент',
             phone: normalizedPhone,
             amount: totalSaleAmount || amount,
-            saleDate: saleDate || '',
+            saleDate: lastSaleDate || saleDate || '',
             isPartner: false,
             partnerName: null,
-            registrationDate: registrationDateAgg,
+            registrationDate: aggRegistrationDate,
             totalOrdersCount
           };
           
