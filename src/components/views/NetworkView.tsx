@@ -76,15 +76,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
             </div>
             <div className="pt-2 border-t border-gray-200 space-y-1">
               <p className="text-xs text-gray-500">
-                <span className="font-medium">Имя:</span> {firstNameValue}
-              </p>
-              <p className="text-xs text-gray-500">
-                <span className="font-medium">Username:</span> {usernameValue}
-              </p>
-              <p className="text-xs text-gray-500">
-                <span className="font-medium">Телефон:</span> {phoneValue}
-              </p>
-              <p className="text-xs text-gray-500">
                 <span className="font-medium">Покупок:</span> {ordersCount}
               </p>
               <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-2 text-[11px] text-gray-800 whitespace-pre-wrap break-all">
@@ -115,10 +106,6 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
       <Navigation currentView={currentView} onViewChange={onViewChange} onLogout={onLogout} />
       
       <div className="p-4 space-y-4">
-        <div className="border border-amber-200 bg-amber-50 text-amber-900 rounded-md px-3 py-2 text-xs whitespace-pre-wrap break-all">
-          <div className="font-semibold mb-1">Debug (network object):</div>
-          {networkDebug}
-        </div>
         <Card>
           <CardHeader>
             <CardTitle>Клиенты, купившие по моему промокоду</CardTitle>
