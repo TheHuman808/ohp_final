@@ -41,10 +41,7 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
           : orderIds.length;
       const saleIdsValue = orderIds.join(", ");
       const amountValue = Number(customer.amount) || 0; // not shown, kept for potential future debug
-      const rawPhone = (customer.phone || '').trim();
-      const phoneValue = rawPhone
-        ? `***${rawPhone.slice(-4)}`
-        : 'не указан';
+      const phoneValue = (customer.phone || '').trim() || 'не указан';
       const tgUsernameRaw =
         (customer.username ||
           customer.telegramUsername ||
