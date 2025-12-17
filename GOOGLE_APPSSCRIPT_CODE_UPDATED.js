@@ -511,19 +511,22 @@ function calculateCommissions() {
     byTgId: Object.keys(partnersByTgId).length
   });
 
-  // --- ШАГ 3: ПОЛУЧЕНИЕ СУЩЕСТВУЮЩИХ НАЧИСЛЕНИЙ ---
+  // --- ШАГ 3: ПОЛУЧЕНИЕ СУЩЕСТВУЮЩИХ НАЧИСЛЕНИЙ (ДЛЯ ОБНОВЛЕНИЯ/ИЗБЕЖАНИЯ ДУБЛЕЙ) ---
   const accLastRow = accrualsSheet.getLastRow();
-  let existingAccruals = new Set(); 
+  let existingAccruals = new Set();
+  let existingAccrualRows = {}; // key -> { rowIndex, values }
   
   if (accLastRow > 1) {
-    // Структура листа Начисления: A=ID, B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата
-    const accData = accrualsSheet.getRange(2, 2, accLastRow - 1, 3).getValues(); 
-    accData.forEach(row => {
-      const saleId = String(row[0] || '').trim();
-      const partnerTgId = String(row[1] || '').trim();
-      const level = String(row[2] || '').trim();
+    // Читаем все 10 колонок: A=ID, B=ID продажи, C=Telegram ID, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество
+    const accData = accrualsSheet.getRange(2, 1, accLastRow - 1, 10).getValues();
+    accData.forEach((row, idx) => {
+      const saleId = String(row[1] || '').trim();
+      const partnerTgId = String(row[2] || '').trim();
+      const level = String(row[3] || '').trim();
       if (saleId && partnerTgId && level) {
-        existingAccruals.add(`${saleId}_${partnerTgId}_${level}`);
+        const key = `${saleId}_${partnerTgId}_${level}`;
+        existingAccruals.add(key);
+        existingAccrualRows[key] = { rowIndex: idx + 2, values: row }; // +2 из-за заголовка
       }
     });
   }
@@ -660,22 +663,36 @@ function calculateCommissions() {
       if (percentage > 0 && beneficiaryTgId) {
         const uniqueKey = `${saleId}_${beneficiaryTgId}_${level}`;
         
-        if (!existingAccruals.has(uniqueKey)) {
-          // Уточняем количество: если 0, пытаемся вывести из суммы и цены за штуку
-          let quantity = salesQuantityMap[saleId] || saleQuantityRaw || 0;
-          if (quantity === 0) {
-            const pricePerUnit = salePromo && !salePromo.includes('@') ? 3500 : 4000;
-            if (pricePerUnit > 0 && saleSum > 0) {
-              quantity = Math.max(1, Math.round(saleSum / pricePerUnit));
-            }
+        // Уточняем количество: если 0, пытаемся вывести из суммы и цены за штуку
+        let quantity = salesQuantityMap[saleId] || saleQuantityRaw || 0;
+        if (quantity === 0) {
+          const pricePerUnit = salePromo && !salePromo.includes('@') ? 3500 : 4000;
+          if (pricePerUnit > 0 && saleSum > 0) {
+            quantity = Math.max(1, Math.round(saleSum / pricePerUnit));
           }
-          if (quantity === 0) quantity = 1;
+        }
+        if (quantity === 0) quantity = 1;
 
-          // Комиссия всегда от реальной суммы продажи (saleSum уже очищен от пробелов/запятых)
-          const commissionAmount = saleSum * percentage;
-          
-          // Структура листа Начисления: 
-          // A=ID, B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных
+        // Комиссия всегда от реальной суммы продажи (saleSum уже очищен от пробелов/запятых)
+        const commissionAmount = saleSum * percentage;
+        
+        // Если уже есть начисление — обновляем сумму/остаток/кол-во, иначе добавляем новое
+        const existingRow = existingAccrualRows[uniqueKey];
+        if (existingRow) {
+          const rowIdx = existingRow.rowIndex;
+          const rowVals = existingRow.values;
+          const currentAmount = parseAmountSafe(rowVals[4]);
+          const currentQty = parseInt(rowVals[9]) || 0;
+          const needUpdate = Math.abs(currentAmount - commissionAmount) > 0.0001 || currentQty !== quantity;
+          if (needUpdate) {
+            accrualsSheet.getRange(rowIdx, 5).setValue(commissionAmount); // E
+            accrualsSheet.getRange(rowIdx, 9).setValue(commissionAmount); // I (Остаток)
+            accrualsSheet.getRange(rowIdx, 10).setValue(quantity);        // J (Количество проданных)
+            console.log(`Sale ${saleId}: Updated accrual for partner ${beneficiaryTgId} at level ${level} -> amount ${commissionAmount}, qty ${quantity}`);
+          } else {
+            console.log(`Sale ${saleId}: Accrual up-to-date for partner ${beneficiaryTgId} at level ${level}`);
+          }
+        } else {
           const today = new Date();
           const dateStr = Utilities.formatDate(today, Session.getScriptTimeZone(), 'dd.MM.yyyy');
           
@@ -694,8 +711,6 @@ function calculateCommissions() {
           
           existingAccruals.add(uniqueKey); // Добавляем, чтобы избежать дублей в этой же сессии
           console.log(`Sale ${saleId}: Added accrual for partner ${beneficiaryTgId} at level ${level}, amount: ${commissionAmount}, quantity: ${quantity}`);
-        } else {
-          console.log(`Sale ${saleId}: Accrual already exists for partner ${beneficiaryTgId} at level ${level}`);
         }
       }
       
