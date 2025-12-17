@@ -545,11 +545,14 @@ function calculateCommissions() {
   
   // Создаем словарь для быстрого доступа к количеству по ID продажи
   const salesQuantityMap = {};
+  const salesAmountMap = {};
   salesData.forEach(sale => {
     const saleId = String(sale[0] || '').trim();
     const quantity = parseInt(sale[1]) || 0; // Колонка B - Количество
+    const amount = parseAmountSafe(sale[2]);  // Колонка C - Сумма
     if (saleId) {
       salesQuantityMap[saleId] = quantity;
+      salesAmountMap[saleId] = amount;
     }
   });
   console.log(`Created sales quantity map with ${Object.keys(salesQuantityMap).length} entries`);
@@ -649,16 +652,14 @@ function calculateCommissions() {
       return; // Если пригласивший не найден в базе, не начисляем комиссию
     }
     
-    console.log(`Sale ${saleId}: Starting MLM chain from inviter ${inviterTgId} (who invited source partner ${sourcePartner.tgId})`);
+    console.log(`Sale ${saleId}: Starting MLM chain. Level 1 = владелец промокода (${sourcePartner.tgId}), далее вверх по пригласившим.`);
     
-    // Ищем пригласителей до 4 уровня
-    // Уровень 1: inviterTgId (тот, кто пригласил sourcePartner)
-    // Уровень 2: пригласивший уровня 1
-    // Уровень 3: пригласивший уровня 2
-    // Уровень 4: пригласивший уровня 3
+    // Уровень 1: сам источник продажи (владелец промокода)
+    // Уровень 2-4: пригласившие по цепочке
+    let currentPartnerForLevel = sourcePartner;
+    
     for (let level = 1; level <= 4; level++) {
-      // currentPartner - это партнер, который получает комиссию на текущем уровне
-      const beneficiaryTgId = currentPartner.tgId;
+      const beneficiaryTgId = currentPartnerForLevel ? currentPartnerForLevel.tgId : null;
       const percentage = levels[level] || 0;
       
       if (percentage > 0 && beneficiaryTgId) {
@@ -700,7 +701,7 @@ function calculateCommissions() {
           newAccruals.push([
             customerInfo || saleId,     // A: ID (информация о клиенте или ID продажи)
             saleId,                      // B: ID продажи
-            beneficiaryTgId,             // C: Telegram ID партнера (получателя комиссии) - это пригласивший на соответствующем уровне
+            beneficiaryTgId,             // C: Telegram ID партнера (получателя комиссии)
             level,                       // D: Уровень
             commissionAmount,            // E: Сумма комиссии
             percentage,                  // F: Процент
@@ -715,17 +716,13 @@ function calculateCommissions() {
         }
       }
       
-      // Поднимаемся на уровень выше - ищем пригласившего currentPartner
-      const nextInviterTgId = currentPartner.inviterTgId;
-      
-      // Если нет пригласителя, прерываем цепочку
+      // Переходим к следующему уровню вверх по цепочке пригласивших
+      const nextInviterTgId = currentPartnerForLevel ? currentPartnerForLevel.inviterTgId : null;
       if (!nextInviterTgId || !partnersByTgId[nextInviterTgId]) {
         console.log(`Sale ${saleId}: No inviter at level ${level + 1}, stopping chain at level ${level}`);
         break;
       }
-      
-      // Переходим к следующему уровню
-      currentPartner = partnersByTgId[nextInviterTgId];
+      currentPartnerForLevel = partnersByTgId[nextInviterTgId];
     }
   });
 
@@ -1237,6 +1234,14 @@ function getPartnerNetwork(telegramId) {
     return normalized;
   }
 
+  function parseAmountSafe(value) {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return value;
+    const normalized = String(value).replace(/\s/g, '').replace(',', '.');
+    const num = parseFloat(normalized);
+    return isNaN(num) ? 0 : num;
+  }
+
   function buildPhoneVariants(phone) {
     const variants = new Set();
     const raw = String(phone || '').trim();
@@ -1315,6 +1320,25 @@ function getPartnerNetwork(telegramId) {
     const currentPromoCode = String(currentPartner[7] || '').trim().toUpperCase(); // Колонка H - Промокод
     console.log('Current partner promo code:', currentPromoCode);
     
+    // Агрегируем покупки по телефону клиента (для суммарной суммы и списка ID покупок)
+    const phoneAggregates = {}; // { normalizedPhone: { saleIds: Set, totalAmount: number } }
+    partnerAccruals.forEach(accrual => {
+      const customerPhoneRaw = String(accrual[0] || '').trim();
+      const saleIdAgg = String(accrual[1] || '').trim();
+      const normalizedPhoneAgg = normalizePhone(customerPhoneRaw);
+      const saleInfoAgg = saleIdAgg ? salesMap[saleIdAgg] || {} : {};
+      const saleAmountAgg = parseAmountSafe(saleInfoAgg.amount);
+      if (normalizedPhoneAgg) {
+        if (!phoneAggregates[normalizedPhoneAgg]) {
+          phoneAggregates[normalizedPhoneAgg] = { saleIds: new Set(), totalAmount: 0 };
+        }
+        if (saleIdAgg) phoneAggregates[normalizedPhoneAgg].saleIds.add(saleIdAgg);
+        if (!isNaN(saleAmountAgg) && saleAmountAgg > 0) {
+          phoneAggregates[normalizedPhoneAgg].totalAmount += saleAmountAgg;
+        }
+      }
+    });
+    
     // --- ШАГ 5: ГРУППИРУЕМ НАЧИСЛЕНИЯ ПО УРОВНЯМ И НАХОДИМ ПАРТНЕРОВ ---
     const networkByLevel = {
       1: [],
@@ -1366,6 +1390,9 @@ function getPartnerNetwork(telegramId) {
       
       if (!addedEntries.has(uniqueKey)) {
         addedEntries.add(uniqueKey);
+        const agg = phoneAggregates[normalizedPhone] || null;
+        const saleIdsString = agg ? Array.from(agg.saleIds).filter(Boolean).join(', ') : saleId;
+        const totalSaleAmount = agg ? agg.totalAmount : amount;
         
         if (partnerInfo) {
           // Если найден партнер - используем данные из листа "Партнеры"
@@ -1375,10 +1402,10 @@ function getPartnerNetwork(telegramId) {
           const partnerPhone = String(partnerInfo[4] || '').trim(); // Колонка E - Телефон
           
           const customer = {
-            id: saleId || normalizedPhone,
+            id: saleIdsString || saleId || normalizedPhone,
             name: `${firstName} ${lastName}`.trim() || 'Не указано',
             phone: partnerPhone || normalizedPhone,
-            amount: amount,
+            amount: totalSaleAmount || amount,
             saleDate: saleDate || '',
             isPartner: true,
             partnerName: `${firstName} ${lastName}`.trim(),
@@ -1392,10 +1419,10 @@ function getPartnerNetwork(telegramId) {
           const customerName = saleInfo.customerInfo ? extractNameFromCustomerInfo(saleInfo.customerInfo) : 'Клиент';
           
           const customer = {
-            id: saleId || normalizedPhone,
+            id: saleIdsString || saleId || normalizedPhone,
             name: customerName || 'Клиент',
             phone: normalizedPhone,
-            amount: amount,
+            amount: totalSaleAmount || amount,
             saleDate: saleDate || '',
             isPartner: false,
             partnerName: null,
