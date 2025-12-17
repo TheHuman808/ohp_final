@@ -42,6 +42,10 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
       const amountValue = Number(customer.amount) || 0;
       const nameValue = (customer.name || '').trim() || 'Не указано';
       const phoneValue = (customer.phone || '').trim() || 'не указан';
+      const saleDateValue = (customer.saleDate || '').trim();
+      const registrationDateValue = (customer.registrationDate || '').trim();
+      const partnerNameValue = (customer.partnerName || '').trim();
+      const statusValue = customer.isPartner ? 'Партнер' : 'Клиент';
 
       return (
         <div key={customer.id} className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
@@ -71,21 +75,24 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
               <p className="text-xs text-gray-500">
                 <span className="font-medium">Покупок:</span> {ordersCount}
               </p>
-              {customer.saleDate && (
+              {saleDateValue && (
                 <p className="text-xs text-gray-500">
-                  <span className="font-medium">Дата:</span> {customer.saleDate}
+                  <span className="font-medium">Последняя покупка:</span> {saleDateValue}
                 </p>
               )}
-              {customer.partnerName && (
+              {partnerNameValue && (
                 <p className="text-xs text-gray-500">
-                  <span className="font-medium">Партнер:</span> {customer.partnerName}
+                  <span className="font-medium">Имя в партнёрке:</span> {partnerNameValue}
                 </p>
               )}
-              {customer.registrationDate && (
+              {registrationDateValue && (
                 <p className="text-xs text-gray-500">
-                  <span className="font-medium">Дата регистрации:</span> {customer.registrationDate}
+                  <span className="font-medium">Дата регистрации:</span> {registrationDateValue}
                 </p>
               )}
+              <p className="text-xs text-gray-500">
+                <span className="font-medium">Статус:</span> {statusValue}
+              </p>
             </div>
           </div>
         </div>
