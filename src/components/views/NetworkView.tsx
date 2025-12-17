@@ -45,12 +45,15 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
       const phoneValue = rawPhone
         ? `***${rawPhone.slice(-4)}`
         : 'не указан';
+      const tgUsernameRaw =
+        (customer.username ||
+          customer.telegramUsername ||
+          customer.telegram_username ||
+          customer.tgUsername ||
+          customer.tg_username ||
+          '').toString().trim();
       const tgIdValue =
-        (customer.telegramId ||
-          customer.telegram_id ||
-          customer.tgId ||
-          customer.tg_id ||
-          '').toString().trim() || 'нет';
+        tgUsernameRaw ? (tgUsernameRaw.startsWith('@') ? tgUsernameRaw : `@${tgUsernameRaw}`) : 'нет';
       const saleDateValue = (customer.saleDate || '').trim();
       const registrationDateValue = (customer.registrationDate || '').trim();
       const partnerNameValue = (customer.partnerName || '').trim();
