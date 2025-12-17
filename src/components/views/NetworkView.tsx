@@ -88,6 +88,13 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
               <p className="text-xs text-gray-500">
                 <span className="font-medium">Покупок:</span> {ordersCount}
               </p>
+              <div className="mt-3 rounded border border-blue-100 bg-blue-50 p-2 text-xs text-gray-800 space-y-1">
+                <p className="font-semibold text-gray-700">Инфо:</p>
+                <p><span className="font-medium">Имя:</span> {firstNameValue}</p>
+                <p><span className="font-medium">Телефон:</span> {phoneValue}</p>
+                <p><span className="font-medium">Username:</span> {usernameValue}</p>
+                <p><span className="font-medium">Кол-во покупок:</span> {ordersCount}</p>
+              </div>
               <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded text-[11px] text-gray-700 whitespace-pre-wrap break-all">
                 {rawObject}
               </div>
