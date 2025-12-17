@@ -51,11 +51,22 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
             </div>
             <div className="pt-2 border-t border-gray-200 space-y-1">
               <p className="text-xs text-gray-500">
-                <span className="font-medium">ID покупки:</span> <code className="bg-gray-100 px-2 py-1 rounded text-xs">{customer.id}</code>
+                <span className="font-medium">ID покупки:</span>{" "}
+                <code className="bg-gray-100 px-2 py-1 rounded text-xs break-all whitespace-pre-wrap">
+                  {customer.id}
+                </code>
               </p>
               <p className="text-xs text-gray-500">
-                <span className="font-medium">Сумма:</span> <span className="text-green-600 font-semibold">₽{(customer.amount || 0).toLocaleString('ru-RU')}</span>
+                <span className="font-medium">Сумма:</span>{" "}
+                <span className="text-green-600 font-semibold">
+                  ₽{(customer.amount || 0).toLocaleString("ru-RU")}
+                </span>
               </p>
+              {customer.totalOrdersCount !== undefined && (
+                <p className="text-xs text-gray-500">
+                  <span className="font-medium">Покупок:</span> {customer.totalOrdersCount}
+                </p>
+              )}
               {customer.saleDate && (
                 <p className="text-xs text-gray-500">
                   <span className="font-medium">Дата:</span> {customer.saleDate}
@@ -186,4 +197,5 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
 };
 
 export default NetworkView;
+
 
