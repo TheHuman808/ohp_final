@@ -285,13 +285,27 @@ function importOrdersToSalesSheet() {
     return 0;
   }
 
-  function calcAmountByPromo(quantity, rawPromoOrEmail) {
+  function parseAmount(value) {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return value;
+    const normalized = String(value).replace(/\s/g, '').replace(',', '.');
+    const num = parseFloat(normalized);
+    return isNaN(num) ? 0 : num;
+  }
+
+  function calcAmountByPromo(quantity, rawPromoOrEmail, rawTotal) {
     const promoRaw = String(rawPromoOrEmail || '').trim();
     const looksLikePromo = promoRaw && !promoRaw.includes('@');
     const hasPromo = looksLikePromo;
     const pricePerUnit = hasPromo ? 3500 : 4000;
     if (quantity && quantity > 0) {
-      return pricePerUnit * quantity;
+      const calculated = pricePerUnit * quantity;
+      const totalNumber = parseAmount(rawTotal);
+      // Если исходная сумма (с учетом скидок) была ниже 3500, оставляем ее.
+      if (totalNumber > 0 && totalNumber < 3500) {
+        return totalNumber;
+      }
+      return calculated;
     }
     return 0;
   }
@@ -339,7 +353,7 @@ function importOrdersToSalesSheet() {
       // Считаем сумму без доставки: 4000 за единицу без промокода, 3500 с промокодом.
       // Если не смогли извлечь количество, считаем как 1 единицу.
       const quantitySafe = quantity > 0 ? quantity : 1;
-      const amountCalculated = calcAmountByPromo(quantitySafe, promoEmailVal);
+      const amountCalculated = calcAmountByPromo(quantitySafe, promoEmailVal, totalVal);
       const promoNormalized = String(promoEmailVal || '').trim().toUpperCase();
       console.log(`  Calculated amount for order ${orderId}:`, amountCalculated, 'promoRaw:', promoEmailVal, 'promoNormalized:', promoNormalized);
       
