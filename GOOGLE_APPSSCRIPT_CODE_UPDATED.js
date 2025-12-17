@@ -1937,11 +1937,15 @@ function updateAccrualsData() {
   const normalizeAccrualsResult = normalizeAccrualsPhones();
   console.log('Normalize accruals result:', normalizeAccrualsResult);
   
-  // 3. Синхронизируем данные из "Продажи" в "Начисления"
+  // 3. Синхронизируем данные из "Продажи" в "Начисления" (qty/date)
   const syncResult = syncSalesDataToAccruals();
   console.log('Sync result:', syncResult);
   
-  // 4. Обновляем количество продаж для партнеров
+  // 4. Пересчитываем комиссии и обновляем суммы/количество в начислениях
+  const calcResult = calculateCommissions();
+  console.log('Calculate commissions result:', calcResult);
+  
+  // 5. Обновляем количество продаж/доход в листе партнеров
   const salesCountResult = updatePartnersSalesCount();
   console.log('Sales count result:', salesCountResult);
   
