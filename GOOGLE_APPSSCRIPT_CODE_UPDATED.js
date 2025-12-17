@@ -1820,47 +1820,69 @@ function updatePartnersSalesCount() {
   
   // Получаем все начисления
   const accrualsLastRow = accrualsSheet.getLastRow();
-  let salesByPartner = {}; // { telegramId: Set of unique sale IDs }
+  let salesByPartner = {};   // { telegramId: Set of unique sale IDs }
+  let incomeByPartner = {};  // { telegramId: totalAmount }
   
   if (accrualsLastRow > 1) {
     // Структура листа Начисления: A=ID, B=ID продажи, C=Telegram ID партнера, D=Уровень, E=Сумма, F=Процент, G=Дата расчета, H=Рассчитались, I=Остаток, J=Количество проданных
     const accrualsData = accrualsSheet.getRange(2, 1, accrualsLastRow - 1, 10).getValues();
     
     accrualsData.forEach(row => {
-      const saleId = String(row[1] || '').trim(); // B - ID продажи
+      const saleId = String(row[1] || '').trim();   // B - ID продажи
       const partnerTgId = String(row[2] || '').trim(); // C - Telegram ID партнера
+      const amount = parseFloat(row[4]) || 0;       // E - Сумма
       
       if (saleId && partnerTgId) {
         if (!salesByPartner[partnerTgId]) {
           salesByPartner[partnerTgId] = new Set();
         }
         salesByPartner[partnerTgId].add(saleId);
+        
+        if (!incomeByPartner[partnerTgId]) {
+          incomeByPartner[partnerTgId] = 0;
+        }
+        // Суммируем только положительные начисления
+        if (amount > 0) {
+          incomeByPartner[partnerTgId] += amount;
+        }
       }
     });
   }
   
   console.log(`Found sales for ${Object.keys(salesByPartner).length} partners`);
+  console.log(`Found income for ${Object.keys(incomeByPartner).length} partners`);
   
-  // Обновляем количество продаж для каждого партнера
+  // Обновляем количество продаж и доход для каждого партнера
   let updatedCount = 0;
   partnersData.forEach((row, index) => {
     const telegramId = String(row[1] || '').trim(); // B - Telegram ID
     const currentSalesCount = parseInt(row[12]) || 0; // M - Количество продаж (индекс 12)
+    const currentIncome = parseFloat(row[11]) || 0;   // L - Общий доход (индекс 11)
     
     if (telegramId) {
       const uniqueSales = salesByPartner[telegramId] ? salesByPartner[telegramId].size : 0;
+      const totalIncome = incomeByPartner[telegramId] || 0;
       
-      // Обновляем только если значение изменилось
-      if (uniqueSales !== currentSalesCount) {
+      // Обновляем только если значения изменились
+      const needUpdateSales = uniqueSales !== currentSalesCount;
+      const needUpdateIncome = Math.abs(totalIncome - currentIncome) > 0.0001;
+      
+      if (needUpdateSales) {
         // Колонка M (индекс 13, но в массиве это индекс 12, так как начинаем с 0)
         partnersSheet.getRange(index + 2, 13).setValue(uniqueSales);
+      }
+      if (needUpdateIncome) {
+        // Колонка L (индекс 12, но в массиве это индекс 11)
+        partnersSheet.getRange(index + 2, 12).setValue(totalIncome);
+      }
+      if (needUpdateSales || needUpdateIncome) {
         updatedCount++;
-        console.log(`Updated partner ${telegramId}: ${currentSalesCount} -> ${uniqueSales} sales`);
+        console.log(`Updated partner ${telegramId}: sales ${currentSalesCount}->${uniqueSales}, income ${currentIncome}->${totalIncome}`);
       }
     }
   });
   
-  console.log(`Updated sales count for ${updatedCount} partners`);
+  console.log(`Updated sales/income for ${updatedCount} partners`);
   console.log('=== END UPDATING PARTNERS SALES COUNT ===');
   
   return { success: true, message: `Обновлено количество продаж для ${updatedCount} партнеров` };
