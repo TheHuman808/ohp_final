@@ -635,22 +635,10 @@ function calculateCommissions() {
     // --- 4.2 РАСЧЕТ MLM ПО ЦЕПОЧКЕ ВВЕРХ (UPLINE) ---
     // ЛОГИКА: 
     // 1. sourcePartner - партнер, который сделал продажу (найден по промокоду из продажи)
-    // 2. inviterTgId - Telegram ID пригласившего sourcePartner (из колонки J листа Партнеры)
-    // 3. Этот inviterTgId получает комиссию уровня 1
-    // 4. Затем идем вверх по цепочке от этого inviterTgId
-    
-    if (!inviterTgId) {
-      console.log(`Sale ${saleId}: Source partner ${sourcePartner.tgId} has no inviter (inviterTgId is empty), skipping commission calculation`);
-      return; // Если нет пригласившего, не начисляем комиссию
-    }
-    
-    // Проверяем, что пригласивший существует в базе партнеров
-    let currentPartner = partnersByTgId[inviterTgId];
-    
-    if (!currentPartner) {
-      console.log(`Sale ${saleId}: Inviter ${inviterTgId} not found in partners database, skipping commission calculation`);
-      return; // Если пригласивший не найден в базе, не начисляем комиссию
-    }
+    // 2. Уровень 1: sourcePartner (владелец промокода) получает комиссию уровня 1
+    // 3. inviterTgId - Telegram ID пригласившего sourcePartner (из колонки J листа Партнеры)
+    // 4. Уровень 2: inviterTgId получает комиссию уровня 2
+    // 5. Уровни 3-4: далее вверх по цепочке пригласивших
     
     console.log(`Sale ${saleId}: Starting MLM chain. Level 1 = владелец промокода (${sourcePartner.tgId}), далее вверх по пригласившим.`);
     
@@ -678,19 +666,23 @@ function calculateCommissions() {
         // Комиссия всегда от реальной суммы продажи (saleSum уже очищен от пробелов/запятых)
         const commissionAmount = saleSum * percentage;
         
-        // Если уже есть начисление — обновляем сумму/остаток/кол-во, иначе добавляем новое
+        // Если уже есть начисление — обновляем сумму/остаток/кол-во/процент, иначе добавляем новое
         const existingRow = existingAccrualRows[uniqueKey];
         if (existingRow) {
           const rowIdx = existingRow.rowIndex;
           const rowVals = existingRow.values;
           const currentAmount = parseAmountSafe(rowVals[4]);
           const currentQty = parseInt(rowVals[9]) || 0;
-          const needUpdate = Math.abs(currentAmount - commissionAmount) > 0.0001 || currentQty !== quantity;
+          const currentPercentage = parseAmountSafe(rowVals[5]);
+          const needUpdate = Math.abs(currentAmount - commissionAmount) > 0.0001 || 
+                            currentQty !== quantity || 
+                            Math.abs(currentPercentage - percentage) > 0.0001;
           if (needUpdate) {
-            accrualsSheet.getRange(rowIdx, 5).setValue(commissionAmount); // E
+            accrualsSheet.getRange(rowIdx, 5).setValue(commissionAmount); // E (Сумма)
+            accrualsSheet.getRange(rowIdx, 6).setValue(percentage);        // F (Процент)
             accrualsSheet.getRange(rowIdx, 9).setValue(commissionAmount); // I (Остаток)
             accrualsSheet.getRange(rowIdx, 10).setValue(quantity);        // J (Количество проданных)
-            console.log(`Sale ${saleId}: Updated accrual for partner ${beneficiaryTgId} at level ${level} -> amount ${commissionAmount}, qty ${quantity}`);
+            console.log(`Sale ${saleId}: Updated accrual for partner ${beneficiaryTgId} at level ${level} -> amount ${commissionAmount}, percentage ${percentage}, qty ${quantity}`);
           } else {
             console.log(`Sale ${saleId}: Accrual up-to-date for partner ${beneficiaryTgId} at level ${level}`);
           }

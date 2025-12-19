@@ -62,7 +62,7 @@ class GoogleSheetsService {
   constructor() {
     this.spreadsheetId = import.meta.env.VITE_GOOGLE_SHEETS_ID || '1fh4-V4n0ho-RF06xcxl0JYxK5xQf8WOMSYy-tF6vRkU';
     this.apiKey = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || 'AIzaSyD1-O9ID7-2EFVum1ITNRyrhJYtvlY5wKg';
-    this.webAppUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzuCm3-EGna7nJvY44Af5AwvYMSoalCJNR2JoUznjlz9N4g0BB7xhXH2yfVpbpQ6HLq/exec';
+    this.webAppUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwL6A1reMn6LtfO9lufjU2awpfoZGkR6DaA5qiXfk94G9fqZX5i2rx_6w5Oha4ZZUDC/exec';
     
     if (!this.apiKey || !this.spreadsheetId) {
       console.warn('Google Sheets API не настроен полностью. Установите переменные окружения VITE_GOOGLE_SHEETS_API_KEY и VITE_GOOGLE_SHEETS_ID');
