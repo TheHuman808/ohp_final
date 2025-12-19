@@ -44,6 +44,10 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
         (customer.firstName ||
           (customer.name ? String(customer.name).split(' ')[0] : '') ||
           '').trim() || 'Не указано';
+      const lastNameValue = (customer.lastName || '').trim() || '';
+      const fullNameValue = lastNameValue 
+        ? `${firstNameValue} ${lastNameValue}`.trim()
+        : firstNameValue;
       const phoneValue = (customer.phone || '').trim() || 'не указан';
       const usernameRaw =
         (customer.username ||
@@ -61,7 +65,7 @@ const NetworkView = ({ network, networkLoading, currentView, onViewChange, onLog
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <User className="w-5 h-5 text-gray-500" />
-              <span className="font-semibold text-base">{firstNameValue}</span>
+              <span className="font-semibold text-base">{fullNameValue}</span>
             </div>
             {customer.isPartner && (
               <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">

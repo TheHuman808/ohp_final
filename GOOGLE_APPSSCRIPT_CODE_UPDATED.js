@@ -1429,6 +1429,8 @@ function getPartnerNetwork(telegramId) {
           
           const customer = {
             id: saleIdsString || saleId || normalizedPhone,
+            firstName: firstName || '',
+            lastName: lastName || '',
             name: (fullNameAgg || aggFullName || `${firstName} ${lastName}`).trim() || 'Не указано',
             phone: partnerPhone || normalizedPhone,
             amount: totalSaleAmount || amount,
@@ -1444,10 +1446,16 @@ function getPartnerNetwork(telegramId) {
         } else {
           // Если партнер не найден - показываем как клиента с телефоном
           const customerName = saleInfo.customerInfo ? extractNameFromCustomerInfo(saleInfo.customerInfo) : 'Клиент';
+          const fullName = customerName || aggFullName || 'Клиент';
+          const nameParts = fullName.trim().split(/\s+/);
+          const firstNameFromName = nameParts.length > 0 ? nameParts[0] : '';
+          const lastNameFromName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
           
           const customer = {
             id: saleIdsString || saleId || normalizedPhone,
-            name: customerName || aggFullName || 'Клиент',
+            firstName: firstNameFromName,
+            lastName: lastNameFromName,
+            name: fullName,
             phone: normalizedPhone,
             amount: totalSaleAmount || amount,
             saleDate: lastSaleDate || saleDate || '',

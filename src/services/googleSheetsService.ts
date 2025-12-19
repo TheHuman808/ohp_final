@@ -520,9 +520,11 @@ class GoogleSheetsService {
                 return null;
               }
               
-              // Структура клиента: { id, name, phone, amount, saleDate, isPartner, partnerName, registrationDate, totalOrdersCount }
+              // Структура клиента: { id, firstName, lastName, name, phone, amount, saleDate, isPartner, partnerName, registrationDate, totalOrdersCount }
               const mapped = {
                 id: String(customer.id || ''),
+                firstName: String(customer.firstName || '').trim(),
+                lastName: String(customer.lastName || '').trim(),
                 name: String(customer.name || customer.partnerName || 'Не указано').trim(),
                 phone: String(customer.phone || '').trim(),
                 amount: parseAmountSafe(customer.amount),
